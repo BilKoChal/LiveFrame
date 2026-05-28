@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-const CONSOLE_HOOK = `
+export const CONSOLE_HOOK = `
 <script>
 (function() {
   const originalLog = console.log;

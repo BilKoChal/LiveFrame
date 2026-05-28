@@ -7,11 +7,14 @@ import { Suspense, lazy, useState } from 'react';
 import { Panel, Group, Separator } from 'react-resizable-panels';
 import Toolbar from '../toolbar/Toolbar';
 import SingleFileTabs from '../editor/SingleFileTabs';
+import ProjectLayout from '../project/ProjectLayout';
 import PreviewFrame from '../preview/PreviewFrame';
 import ConsolePanel from '../console/ConsolePanel';
 import ResizeHandle from './ResizeHandle';
 import EditorSkeleton from '../editor/EditorSkeleton';
 import { useLayoutStore } from '../../stores/layoutStore';
+import { useProjectStore } from '../../stores/projectStore';
+import { useEditorStore } from '../../stores/editorStore';
 
 // Lazy-load CodeMirror for faster initial page load
 const CodeMirrorEditor = lazy(() => import('../editor/CodeMirrorEditor'));
@@ -19,11 +22,25 @@ const CodeMirrorEditor = lazy(() => import('../editor/CodeMirrorEditor'));
 export default function AppLayout() {
   const [manualTrigger, setManualTrigger] = useState(0);
   const isConsoleOpen = useLayoutStore((state) => state.isConsoleOpen);
+  const mode = useLayoutStore((state) => state.mode);
+  const activeProject = useProjectStore((s) => s.activeProject);
+  const activeFileId = useEditorStore((s) => s.activeFileId);
 
   const handleManualRefresh = () => {
     setManualTrigger((prev) => prev + 1);
   };
 
+  // Project mode: render the project layout (file tree + tabs + editor + preview)
+  if (mode === 'project' && activeProject?.mode === 'project') {
+    return (
+      <div className="flex flex-col h-screen w-screen overflow-hidden bg-white dark:bg-slate-950 font-sans antialiased text-slate-800 dark:text-slate-100 selection:bg-indigo-500/20">
+        <Toolbar onManualRefresh={handleManualRefresh} />
+        <ProjectLayout />
+      </div>
+    );
+  }
+
+  // Single-file mode: the original layout
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-white dark:bg-slate-950 font-sans antialiased text-slate-800 dark:text-slate-100 selection:bg-indigo-500/20">
       {/* Primary Toolbar Controls */}

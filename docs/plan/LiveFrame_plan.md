@@ -13,7 +13,7 @@
 | Phase | Status | Completion |
 |-------|--------|-----------|
 | Phase 0 — Rapid Prototype | **Complete** ✅ | 100% |
-| Phase 1 — Core Features | Not Started | 0% |
+| Phase 1 — Core Features | **In Progress** 🔧 | ~60% |
 | Phase 2 — Polish & Production | Partially Started | ~15% |
 | Phase 3 — Enhancement | Not Started | 0% |
 
@@ -21,7 +21,7 @@
 - ✅ **M1: First Preview** — Code typed in editor appears in live preview iframe
 - ✅ **M2: Theme Working** — Dark/light/system theme toggle works for both UI and CodeMirror
 - ✅ **M5: Console & Errors** — Console capture and error overlay working (pulled into Phase 0 early)
-- ⬜ M3: Project Mode — Not yet implemented
+- 🔧 M3: Project Mode — Partially implemented (1.1–1.4 done, 1.7–1.9 remaining)
 - ⬜ M4: Persistent — Not yet implemented
 - ⬜ M6: Production — Not yet deployed
 
@@ -144,29 +144,29 @@ See [`structure.md`](./structure.md) for the complete directory tree and file re
 
 > **Note**: Console capture (1.5) and error overlay (1.6) were implemented early as part of Phase 0 and are already functional in the codebase. They are kept here for tracking but are marked as done.
 
-#### 1.1 Project Mode — Data Model & Stores ⬜
-- Create `projectStore.ts` with full project/file CRUD actions
-- Create `editorStore.ts` (enhanced) with per-file content, dirty state, cursor positions
-- Implement `vfs.ts` (VirtualFileSystem class with flat Map + path index)
-- Create type definitions (`ProjectId`, `FileId`, `FileEntry`, `Project`, etc.)
-- Implement single-file mode as virtual project (3 files with `isVirtual: true`)
+#### 1.1 Project Mode — Data Model & Stores ✅
+- [x] Create `projectStore.ts` with full project/file CRUD actions — **Created at `src/stores/projectStore.ts`**
+- [x] Create `editorStore.ts` (enhanced) with per-file content, dirty state, tab management — **Enhanced at `src/stores/editorStore.ts`**
+- [x] Implement `vfs.ts` (VirtualFileSystem class with flat Map + path index) — **Created at `src/utils/vfs.ts`**
+- [x] Create type definitions (`ProjectId`, `FileId`, `FileEntry`, `Project`, etc.) — **Created at `src/types/project.ts`**
+- [x] Implement single-file mode as virtual project (3 files with `isVirtual: true`) — **Uses stable IDs: `proj_virtual_default`, `file_virtual_html/css/js`**
 
-#### 1.2 Project Mode — File Tree UI
-- Create `FileTree.tsx` with virtualized rendering (`@tanstack/react-virtual`)
-- Create `FileTreeNode.tsx` with expand/collapse, file icons, dirty indicators
-- Create `FileTreeContextMenu.tsx` (new file, new folder, rename, delete)
-- Implement `ProjectLayout.tsx` with file tree panel + editor + preview
+#### 1.2 Project Mode — File Tree UI ✅
+- [x] Create `FileTree.tsx` with virtualized rendering (`@tanstack/react-virtual`) — **Created at `src/components/project/FileTree.tsx`**
+- [x] Expand/collapse, file icons (lucide-react), dirty indicators — **Integrated inline (no separate FileTreeNode)**
+- [x] Context menu (new file, new folder, rename, delete) — **Integrated inline (no separate FileTreeContextMenu)**
+- [x] Implement `ProjectLayout.tsx` with file tree panel + editor + preview — **Created at `src/components/project/ProjectLayout.tsx`**
 
-#### 1.3 Project Mode — File Tabs
-- Create `ProjectFileTabs.tsx` with sortable tabs (`@dnd-kit/sortable`)
-- Create `SortableTab.tsx` with drag handle, close button, dirty indicator
-- Implement tab state management (open, close, reorder, activate)
+#### 1.3 Project Mode — File Tabs ✅
+- [x] Create `ProjectFileTabs.tsx` with sortable tabs (`@dnd-kit/sortable`) — **Created at `src/components/project/ProjectFileTabs.tsx`**
+- [x] SortableTab with drag handle, close button, dirty indicator — **Integrated inline (SortableTab sub-component)**
+- [x] Implement tab state management (open, close, reorder, activate) — **In `editorStore.ts`**
 
-#### 1.4 IndexedDB Persistence
-- Create `idb.ts` with database schema, initialization, CRUD operations
-- Implement auto-save with two-tier debounce (structural: immediate, content: 3s)
-- Implement project loading on startup
-- Implement project list page (`ProjectList.tsx`)
+#### 1.4 IndexedDB Persistence ✅
+- [x] Create `idb.ts` with database schema, initialization, CRUD operations — **Created at `src/utils/idb.ts`**
+- [x] Implement auto-save with two-tier debounce (structural: immediate, content: 3s) — **Implemented with `scheduleContentSave` and `saveStructuralChange`**
+- [x] Implement project loading on startup — **Hydration in `App.tsx` via `hydrateFromIDB`**
+- [x] Implement project list page (`ProjectList.tsx`) — **Created at `src/components/project/ProjectList.tsx`**
 
 #### 1.5 Console Capture ✅ (Implemented early in Phase 0)
 - [x] Create console capture script (injected into iframe) — **Located in `src/utils/previewBuilder.ts` as `CONSOLE_HOOK`**
@@ -180,11 +180,11 @@ See [`structure.md`](./structure.md) for the complete directory tree and file re
 - [x] Create error overlay with error message, dismiss button — **Inline in `PreviewFrame.tsx`**
 - [ ] Add error count badge on preview panel — **Not done**
 
-#### 1.7 Mode Switching
-- Implement seamless switching between single-file and project mode
-- Add `ModeSwitcher.tsx` to toolbar
-- Handle panel resizing on mode switch (imperative `PanelAPI.resize()`)
-- Preserve work when switching modes (virtual project promotion/demotion)
+#### 1.7 Mode Switching ✅ (Implemented as part of 1.1–1.4)
+- [x] Implement seamless switching between single-file and project mode — **In `Toolbar.tsx` mode switcher button**
+- [x] Add `ModeSwitcher.tsx` to toolbar — **Integrated into `Toolbar.tsx`**
+- [ ] Handle panel resizing on mode switch (imperative `PanelAPI.resize()`) — **Not yet done**
+- [x] Preserve work when switching modes (virtual project promotion/demotion) — **`switchToProjectMode`/`switchToSingleFileMode` in projectStore**
 
 #### 1.8 External Resources
 - Create `ExternalResourcePanel.tsx` (add/remove/reorder CDN URLs)
