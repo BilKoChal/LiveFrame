@@ -3,7 +3,27 @@
 > **Project**: LiveFrame — Browser-based HTML/CSS/JS code editor with live preview  
 > **Stack**: React 19 + Vite 6 + TypeScript 5.8 + Tailwind CSS v4 + CodeMirror 6 + Zustand + shadcn/ui  
 > **Target**: Both developers and learners | **Deployment**: GitHub Pages  
-> **Date**: 2026-05-29
+> **Date**: 2026-05-29  
+> **Last Updated**: 2026-05-29
+
+---
+
+## Current Progress
+
+| Phase | Status | Completion |
+|-------|--------|-----------|
+| Phase 0 — Rapid Prototype | **Mostly Complete** | ~85% |
+| Phase 1 — Core Features | Not Started | 0% |
+| Phase 2 — Polish & Production | Partially Started | ~10% |
+| Phase 3 — Enhancement | Not Started | 0% |
+
+### Completed Milestones
+- ✅ **M1: First Preview** — Code typed in editor appears in live preview iframe
+- ✅ **M2: Theme Working** — Dark/light/system theme toggle works for both UI and CodeMirror
+- ⬜ M3: Project Mode — Not yet implemented
+- ⬜ M4: Persistent — Not yet implemented
+- ⬜ M5: Console & Errors — Console capture is working (but was pulled into Phase 0 early); error overlay is working
+- ⬜ M6: Production — Not yet deployed
 
 ---
 
@@ -69,60 +89,62 @@ See [`structure.md`](./structure.md) for the complete directory tree and file re
 
 **All areas at minimal but functional level:**
 
-#### 0.1 Project Scaffolding
-- Initialize Vite + React + TypeScript project
-- Install and configure Tailwind CSS v4 (`@tailwindcss/vite` plugin)
-- Set up shadcn/ui (`npx shadcn@latest init`)
-- Create `vite.config.ts` with path aliases (`@/`)
-- Create `tsconfig.json` with project references
-- Create `.env.development` and `.env.production` with `VITE_BASE_PATH`
-- Create `.gitignore`, `README.md`
+#### 0.1 Project Scaffolding ✅
+- [x] Initialize Vite + React + TypeScript project
+- [x] Install and configure Tailwind CSS v4 (`@tailwindcss/vite` plugin)
+- [ ] Set up shadcn/ui (`npx shadcn@latest init`) — **Not yet done**
+- [x] Create `vite.config.ts` with path aliases (`@/`)
+- [x] Create `tsconfig.json` with project references
+- [ ] Create `.env.development` and `.env.production` with `VITE_BASE_PATH` — **Being added now**
+- [ ] Create `.gitignore`, `README.md` — **Not yet done**
 
-#### 0.2 Basic Layout
-- Implement `AppLayout.tsx` with toolbar + main area
-- Implement `SingleFileLayout.tsx` with `react-resizable-panels` (horizontal split: editor | preview)
-- Add vertical split for console panel (below editor + preview)
-- Create custom `ResizeHandle.tsx` component
-- Set up `layoutStore.ts` (panel visibility, mode)
+#### 0.2 Basic Layout ~85%
+- [x] Implement resizable panel layout with `react-resizable-panels` (horizontal: editor | preview; vertical: top | console)
+- [x] Create custom `ResizeHandle.tsx` component
+- [ ] Implement `AppLayout.tsx` as a separate component — **Layout is currently in `App.tsx`**
+- [ ] Implement `SingleFileLayout.tsx` — **Not a separate component yet**
+- [ ] Set up `layoutStore.ts` (panel visibility, mode) — **Console panel state is in `uiStore.ts`**
 
-#### 0.3 CodeMirror Integration
-- Install and configure `@uiw/react-codemirror` + language packages
-- Create `CodeMirrorEditor.tsx` as a lazy-loaded component
-- Implement `SingleFileTabs.tsx` (HTML | CSS | JS tab switching)
-- Add basic extensions: syntax highlighting, bracket matching, auto-close tags
-- Add Emmet plugin (`@emmetio/codemirror-plugin`)
-- Create `EditorSkeleton.tsx` loading state
+#### 0.3 CodeMirror Integration ~80%
+- [x] Install and configure `@uiw/react-codemirror` + language packages (HTML, CSS, JS)
+- [x] Implement `SingleFileTabs.tsx` (HTML | CSS | JS tab switching)
+- [x] Add basic extensions: syntax highlighting, bracket matching, auto-close tags, autocompletion
+- [ ] Create `CodeMirrorEditor.tsx` as a lazy-loaded component — **Currently eagerly imported; no `React.lazy()` or `Suspense`**
+- [ ] Add Emmet plugin (`@emmetio/codemirror-plugin`) — **Not installed**
+- [ ] Create `EditorSkeleton.tsx` loading state — **Not created**
 
-#### 0.4 Zustand Stores (Minimal)
-- Create `editorStore.ts` with `html`, `css`, `javascript` state + setters
-- Create `uiStore.ts` with `theme`, `autoRefresh`, `consoleEntries`, `errorOverlay`
-- Wire stores to editor and preview components
+#### 0.4 Zustand Stores (Minimal) ✅
+- [x] Create `editorStore.ts` with `html`, `css`, `javascript` state + setters
+- [x] Create `uiStore.ts` with `theme`, `autoRefresh`, `consoleEntries`, `errorOverlay`
+- [x] Wire stores to editor and preview components
 
-#### 0.5 Live Preview
-- Create `preview-builder.ts` with `assembleDocument()` function
-- Create `PreviewFrame.tsx` with iframe + srcdoc
-- Implement `useAutoRefresh.ts` hook with 400ms debounce
-- Add manual refresh button in toolbar
+#### 0.5 Live Preview ✅
+- [x] Create `preview-builder.ts` with `assembleDocument()` function (located at `src/utils/previewBuilder.ts`)
+- [x] Create `PreviewFrame.tsx` with iframe + srcdoc
+- [x] Implement `useAutoRefresh.ts` hook with 400ms debounce
+- [x] Add manual refresh button in toolbar
 
-#### 0.6 Dark/Light Theme
-- Create `index.css` with CSS variables for both themes (`:root` + `.dark`)
-- Implement `useTheme.ts` hook with system preference detection
-- Create `ThemeToggle.tsx` dropdown (light/dark/system)
-- Configure CodeMirror themes to read from CSS variables
+#### 0.6 Dark/Light Theme ✅
+- [x] Create `index.css` with theme support (Tailwind v4 `@theme inline`, dark class toggle)
+- [x] Implement `useTheme.ts` hook with system preference detection
+- [x] Create `ThemeToggle.tsx` (light/dark/system toggle)
+- [x] Configure CodeMirror themes to respond to dark/light mode
 
-#### 0.7 Basic Toolbar
-- Implement `Toolbar.tsx` with: logo, auto-refresh toggle, manual refresh, theme toggle
-- Create `RefreshControls.tsx` component
+#### 0.7 Basic Toolbar ~90%
+- [x] Implement `Toolbar.tsx` with: logo, auto-refresh toggle, manual refresh, theme toggle, reset button
+- [ ] Create `RefreshControls.tsx` as a separate component — **Refresh controls are inline in Toolbar**
 
-**Phase 0 Deliverable**: A working CodePen-like single-file editor with live preview, dark/light theme, and resizable panels. Users can type HTML/CSS/JS and see results in real-time.
+**Phase 0 Deliverable**: A working CodePen-like single-file editor with live preview, dark/light theme, and resizable panels. Users can type HTML/CSS/JS and see results in real-time. **STATUS: ~85% complete — core functionality works; minor items remaining (lazy-loading, Emmet, shadcn, layoutStore).**
 
 ---
 
-### Phase 1 — Core Features
+### Phase 1 — Core Features ⬜
 
 **Goal**: Add project mode, persistence, console capture, error overlay, and external resources — making LiveFrame a complete editor.
 
-#### 1.1 Project Mode — Data Model & Stores
+> **Note**: Console capture (1.5) and error overlay (1.6) were implemented early as part of Phase 0 and are already functional in the codebase. They are kept here for tracking but are marked as done.
+
+#### 1.1 Project Mode — Data Model & Stores ⬜
 - Create `projectStore.ts` with full project/file CRUD actions
 - Create `editorStore.ts` (enhanced) with per-file content, dirty state, cursor positions
 - Implement `vfs.ts` (VirtualFileSystem class with flat Map + path index)
@@ -146,17 +168,17 @@ See [`structure.md`](./structure.md) for the complete directory tree and file re
 - Implement project loading on startup
 - Implement project list page (`ProjectList.tsx`)
 
-#### 1.5 Console Capture
-- Create `console-capture-script.ts` (injected into iframe)
-- Implement `useConsoleCapture.ts` hook (listens for `liveframe:console` postMessage)
-- Create `ConsolePanel.tsx` with color-coded entries, clear button
-- Create `ConsoleEntry.tsx` with formatted output (objects, arrays, errors)
-- Create `ConsoleToolbar.tsx` with filter, search, timestamp toggle
+#### 1.5 Console Capture ✅ (Implemented early in Phase 0)
+- [x] Create console capture script (injected into iframe) — **Located in `src/utils/previewBuilder.ts` as `CONSOLE_HOOK`**
+- [x] Implement `postMessage` listener for `liveframe:console` — **Located in `PreviewFrame.tsx`**
+- [x] Create `ConsolePanel.tsx` with color-coded entries, clear button, search filter
+- [ ] Create `ConsoleEntry.tsx` as a separate component — **Inline in ConsolePanel**
+- [ ] Create `ConsoleToolbar.tsx` as a separate component — **Inline in ConsolePanel**
 
-#### 1.6 Error Overlay
-- Implement `useErrorCapture.ts` hook (listens for `liveframe:error` postMessage)
-- Create `ErrorOverlay.tsx` with error message, stack trace, dismiss button
-- Add error count badge on preview panel
+#### 1.6 Error Overlay ✅ (Implemented early in Phase 0)
+- [x] Implement error capture via `postMessage` — **Located in `PreviewFrame.tsx`**
+- [x] Create error overlay with error message, dismiss button — **Inline in `PreviewFrame.tsx`**
+- [ ] Add error count badge on preview panel — **Not done**
 
 #### 1.7 Mode Switching
 - Implement seamless switching between single-file and project mode
@@ -178,16 +200,17 @@ See [`structure.md`](./structure.md) for the complete directory tree and file re
 
 ---
 
-### Phase 2 — Polish & Production
+### Phase 2 — Polish & Production 🔧
 
 **Goal**: Add responsive device frames, ZIP export, templates, keyboard shortcuts, accessibility, and production-ready CI/CD.
 
-#### 2.1 Responsive Device Frames
-- Create `DeviceFrame.tsx` with CSS bezel simulation
-- Create `DevicePresets.ts` with 14 device dimension presets
-- Add `DeviceSelector.tsx` dropdown to toolbar
-- Implement zoom-to-fit with `ResizeObserver`
-- Add custom device size dialog
+#### 2.1 Responsive Device Frames ~30%
+- [x] Basic device mode switching (fluid/tablet/phone) — **Inline in `PreviewFrame.tsx`**
+- [ ] Create `DeviceFrame.tsx` with CSS bezel simulation — **Not a separate component**
+- [ ] Create `DevicePresets.ts` with 14 device dimension presets — **Only 3 presets exist**
+- [ ] Add `DeviceSelector.tsx` dropdown to toolbar — **Device buttons are inline in PreviewFrame**
+- [ ] Implement zoom-to-fit with `ResizeObserver`
+- [ ] Add custom device size dialog
 
 #### 2.2 ZIP Export & Import
 - Create `zip-export.ts` using `fflate`
@@ -212,12 +235,12 @@ See [`structure.md`](./structure.md) for the complete directory tree and file re
 - Support `prefers-reduced-motion` and `prefers-contrast`
 - Ensure keyboard navigation for file tree and tabs
 
-#### 2.6 CI/CD Pipeline
-- Create `.github/workflows/ci.yml` (lint, typecheck, test, build)
-- Create `.github/workflows/deploy.yml` (build + deploy on CI success)
-- Add `404.html` SPA routing trick to deploy workflow
-- Configure dynamic base path per repo name
-- Add concurrency control to workflows
+#### 2.6 CI/CD Pipeline 🔧 (Deploy workflow being added now)
+- [ ] Create `.github/workflows/ci.yml` (lint, typecheck, test, build) — **Not yet done**
+- [x] Create `.github/workflows/deploy.yml` (build + deploy on push to main) — **Being added now**
+- [x] Add `404.html` SPA routing trick — **Being added now**
+- [x] Configure dynamic base path per repo name — **Being added via `VITE_BASE_PATH` env var**
+- [x] Add concurrency control to workflows — **Being added now**
 
 #### 2.7 Production Optimizations
 - Verify code splitting: `vendor-react`, `vendor-codemirror`, `vendor`, app chunks
@@ -320,11 +343,11 @@ Phase 3 (ongoing, no strict dependencies)
 
 ## Next Steps
 
-1. **Extract this planning package** into the project repository's `docs/plan/` directory
-2. **Initialize the project** using the Development Agent with the scaffold structure from `structure.md`
-3. **Start Phase 0** — Focus on getting a working single-file editor with live preview
-4. **Set up CI early** — Even a basic CI workflow in Phase 0 catches issues early
-5. **Test on GitHub Pages** — Deploy a skeleton early to validate the base path and SPA routing
+1. ~~**Extract this planning package** into the project repository's `docs/plan/` directory~~ ✅ Done
+2. ~~**Initialize the project** using the Development Agent with the scaffold structure from `structure.md`~~ ✅ Done (Phase 0 ~85% complete)
+3. **Complete remaining Phase 0 items** — Lazy-load CodeMirror, add Emmet plugin, set up shadcn/ui, create layoutStore
+4. **Start Phase 1** — Project mode (data model, file tree, tabs, IndexedDB persistence)
+5. **Deploy to GitHub Pages** — Deploy workflow being added; push to `main` to trigger auto-deploy
 
 ---
 

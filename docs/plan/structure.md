@@ -1,141 +1,28 @@
-# LiveFrame — Initial Project Structure
+# LiveFrame — Project Structure
 
-> This file defines the baseline directory layout for the LiveFrame project.  
-> The Development Agent will use this as a starting reference and may update it during implementation.
+> This file documents the **current** project structure as of 2026-05-29.  
+> For the target structure, see the original plan in `LiveFrame_plan.md`.
 
 ---
 
-## Directory Tree
+## Current Directory Tree
 
 ```
 liveframe/
 ├── .github/
 │   └── workflows/
-│       ├── ci.yml                          # CI pipeline (lint, typecheck, test, build)
-│       └── deploy.yml                      # Deploy to GitHub Pages on CI success
-│
-├── public/
-│   └── favicon.svg                         # App favicon
-│
-├── src/
-│   ├── main.tsx                            # Entry point — renders App
-│   ├── App.tsx                             # Root component — providers + router
-│   ├── index.css                           # Global styles + Tailwind v4 + theme variables
-│   ├── vite-env.d.ts                       # Vite type declarations
-│   │
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── AppLayout.tsx               # Root layout shell (toolbar + main area)
-│   │   │   ├── SingleFileLayout.tsx        # Single-file mode panel layout
-│   │   │   ├── ProjectLayout.tsx           # Project mode panel layout
-│   │   │   ├── ResizeHandle.tsx            # Custom resize handle component
-│   │   │   └── StatusBar.tsx               # Optional bottom status bar
-│   │   │
-│   │   ├── editor/
-│   │   │   ├── CodeMirrorEditor.tsx        # Lazy-loaded CM6 editor (separate chunk)
-│   │   │   ├── EditorPanel.tsx             # Editor panel wrapper (tabs + editor)
-│   │   │   ├── SingleFileTabs.tsx          # HTML|CSS|JS tab bar for single-file mode
-│   │   │   ├── ProjectFileTabs.tsx         # File tab bar for project mode (sortable)
-│   │   │   ├── SortableTab.tsx             # Draggable tab item (@dnd-kit)
-│   │   │   └── EditorSkeleton.tsx          # Loading skeleton for lazy-loaded editor
-│   │   │
-│   │   ├── preview/
-│   │   │   ├── PreviewPanel.tsx            # Preview panel wrapper
-│   │   │   ├── PreviewFrame.tsx            # Iframe component with srcdoc
-│   │   │   ├── DeviceFrame.tsx             # Device frame wrapper (phone/tablet/desktop)
-│   │   │   ├── ErrorOverlay.tsx            # Runtime error overlay on preview
-│   │   │   └── DevicePresets.ts            # Device dimension presets data
-│   │   │
-│   │   ├── console/
-│   │   │   ├── ConsolePanel.tsx            # Console panel (bottom)
-│   │   │   ├── ConsoleEntry.tsx            # Individual console message row
-│   │   │   └── ConsoleToolbar.tsx          # Console header (clear, filter, search)
-│   │   │
-│   │   ├── project/
-│   │   │   ├── FileTree.tsx                # File tree component (virtualized)
-│   │   │   ├── FileTreeNode.tsx            # Tree node (file or directory)
-│   │   │   ├── FileTreeContextMenu.tsx     # Right-click context menu
-│   │   │   └── ProjectList.tsx             # Project list/gallery page
-│   │   │
-│   │   ├── toolbar/
-│   │   │   ├── Toolbar.tsx                 # Top toolbar
-│   │   │   ├── ModeSwitcher.tsx            # Single-file / Project mode toggle
-│   │   │   ├── RefreshControls.tsx         # Auto-refresh toggle + manual refresh
-│   │   │   ├── DeviceSelector.tsx          # Device frame preset dropdown
-│   │   │   ├── ThemeToggle.tsx             # Dark/Light/System theme dropdown
-│   │   │   └── ExportButton.tsx            # ZIP export trigger
-│   │   │
-│   │   ├── shared/
-│   │   │   ├── ExternalResourcePanel.tsx   # Manage external CSS/JS URLs
-│   │   │   ├── TemplateGallery.tsx         # Starter template picker dialog
-│   │   │   └── SettingsDialog.tsx          # App settings dialog
-│   │   │
-│   │   └── ui/                             # shadcn/ui generated components
-│   │       ├── button.tsx
-│   │       ├── dialog.tsx
-│   │       ├── dropdown-menu.tsx
-│   │       ├── tabs.tsx
-│   │       ├── tooltip.tsx
-│   │       ├── select.tsx
-│   │       ├── switch.tsx
-│   │       ├── scroll-area.tsx
-│   │       ├── separator.tsx
-│   │       ├── input.tsx
-│   │       ├── skeleton.tsx
-│   │       ├── sheet.tsx
-│   │       ├── collapsible.tsx
-│   │       ├── context-menu.tsx
-│   │       ├── alert-dialog.tsx
-│   │       ├── badge.tsx
-│   │       ├── sonner.tsx
-│   │       └── ... (other shadcn components)
-│   │
-│   ├── stores/
-│   │   ├── projectStore.ts                 # Project + file CRUD, mode switching
-│   │   ├── editorStore.ts                  # Editor content, cursor, dirty state
-│   │   ├── uiStore.ts                      # Theme, console entries, errors, preferences
-│   │   └── layoutStore.ts                  # Panel visibility, mode, device frame
-│   │
-│   ├── hooks/
-│   │   ├── usePreviewSrcdoc.ts             # Assembles srcdoc from store state
-│   │   ├── useConsoleCapture.ts            # Listens for iframe postMessage
-│   │   ├── useErrorCapture.ts              # Listens for iframe error messages
-│   │   ├── useAutoRefresh.ts               # Debounced auto-refresh logic
-│   │   ├── useTheme.ts                     # Theme detection + application
-│   │   └── useKeyboardShortcuts.ts         # Global keyboard shortcut handler
-│   │
-│   ├── lib/
-│   │   ├── idb.ts                          # IndexedDB wrapper (database init + CRUD)
-│   │   ├── vfs.ts                          # VirtualFileSystem class (flat map + path index)
-│   │   ├── preview-builder.ts              # assembleDocument() function
-│   │   ├── console-capture-script.ts       # Script injected into iframe for console capture
-│   │   ├── zip-export.ts                   # ZIP export/import using fflate
-│   │   ├── templates.ts                    # Built-in starter template definitions
-│   │   ├── file-utils.ts                  # getLanguageFromPath(), getFileType(), path utils
-│   │   └── codemirror/
-│   │       ├── themes.ts                   # Dark/light CM6 themes using CSS variables
-│   │       ├── extensions.ts               # Extension configs per language
-│   │       └── setup.ts                    # CM6 basic setup configuration
-│   │
-│   ├── pages/
-│   │   ├── SingleFileEditor.tsx            # Route: / — single-file editor page
-│   │   └── ProjectEditor.tsx               # Route: /project/:id — project editor page
-│   │
-│   ├── router/
-│   │   └── index.tsx                       # React Router configuration
-│   │
-│   └── test/
-│       ├── setup.ts                        # Vitest setup (matchMedia, ResizeObserver mocks)
-│       └── utils.tsx                       # Test utilities (custom render, helpers)
-│
-├── e2e/                                    # Playwright E2E tests (post-MVP)
-│   └── editor.spec.ts
+│       └── deploy.yml                       # GitHub Pages auto-deploy on push to main
 │
 ├── docs/
-│   └── plan/                               # This planning package
-│       ├── LiveFrame_plan.md
-│       ├── synthesis.md
-│       ├── structure.md
+│   ├── prompt.md                            # Development Agent behavior prompt
+│   └── plan/
+│       ├── LiveFrame_plan.md                # Main project plan (with progress markers)
+│       ├── synthesis.md                     # Synthesis report from research
+│       ├── structure.md                     # This file — current project structure
+│       ├── tasks/
+│       │   └── 1 - plan-update-and-ghpages-deploy.md
+│       ├── worklogs/
+│       │   └── (to be created)
 │       └── research/
 │           ├── LiveFrame_general_architect_report.md
 │           ├── LiveFrame_editor_preview_report.md
@@ -143,21 +30,61 @@ liveframe/
 │           ├── LiveFrame_uiux_layout_report.md
 │           └── LiveFrame_devops_build_report.md
 │
-├── .env.development                        # VITE_BASE_PATH=/
-├── .env.production                         # VITE_BASE_PATH=/LiveFrame/
-├── .env.example                            # Documentation for env vars
-├── .gitignore
-├── .prettierrc                             # Prettier config + tailwind plugin
-├── .prettierignore
-├── eslint.config.js                        # ESLint 9 flat config
-├── tsconfig.json                           # Root — project references
-├── tsconfig.app.json                       # App code (browser, strict)
-├── tsconfig.node.json                      # Config files (Node.js)
-├── vite.config.ts                          # Vite + Tailwind v4 + code splitting
-├── vitest.config.ts                        # Vitest + jsdom + coverage
-├── package.json                            # Scripts + dependencies
-└── README.md                               # Project documentation
+├── public/
+│   └── 404.html                             # SPA redirect for GitHub Pages
+│
+├── src/
+│   ├── main.tsx                             # Entry point — renders App
+│   ├── App.tsx                              # Root component — layout + toolbar + panels
+│   ├── index.css                            # Global styles + Tailwind v4 + theme vars + fonts
+│   ├── types.ts                             # Shared types: Theme, ActiveTab, ConsoleEntry
+│   │
+│   ├── components/
+│   │   ├── CodeMirrorEditor.tsx             # CodeMirror 6 editor (eager, not lazy yet)
+│   │   ├── Toolbar.tsx                      # Top toolbar (logo, auto-run, run, reset, theme)
+│   │   ├── PreviewFrame.tsx                 # Preview iframe + device mode + error overlay
+│   │   ├── SingleFileTabs.tsx               # HTML|CSS|JS tab bar
+│   │   ├── ConsolePanel.tsx                 # Console output panel (entries, search, clear)
+│   │   ├── ThemeToggle.tsx                  # Dark/Light/System toggle
+│   │   └── ResizeHandle.tsx                 # Custom drag handle for panel resizing
+│   │
+│   ├── stores/
+│   │   ├── editorStore.ts                   # Editor content (html, css, js, activeTab)
+│   │   └── uiStore.ts                       # UI state (theme, autoRefresh, console, errors)
+│   │
+│   ├── hooks/
+│   │   ├── useTheme.ts                      # Theme detection + application
+│   │   └── useAutoRefresh.ts               # Debounced auto-refresh + manual trigger
+│   │
+│   └── utils/
+│       └── previewBuilder.ts               # assembleDocument() + console capture script
+│
+├── .env.development                         # VITE_BASE_PATH=/
+├── .env.production                          # VITE_BASE_PATH=/LiveFrame/
+├── .env.example                             # Documentation for env vars
+├── .gitignore                               # Ignores node_modules, dist, .env*, etc.
+├── index.html                               # HTML entry point with SPA routing script
+├── package.json                             # Scripts + dependencies
+├── package-lock.json                        # Locked dependency versions
+├── tsconfig.json                            # TypeScript configuration
+├── vite.config.ts                           # Vite + Tailwind v4 + dynamic base path
+└── metadata.json                            # Project metadata
 ```
+
+---
+
+## Comparison: Current vs Target Structure
+
+| Category | Current State | Target State (from Plan) | Gap |
+|----------|--------------|-------------------------|-----|
+| **Components** | Flat `src/components/` | Subdirectories: `layout/`, `editor/`, `preview/`, `console/`, `toolbar/`, `shared/`, `ui/` | Need to reorganize into subdirectories |
+| **Stores** | `editorStore.ts`, `uiStore.ts` | Add `projectStore.ts`, `layoutStore.ts` | 2 stores missing |
+| **Hooks** | `useTheme.ts`, `useAutoRefresh.ts` | Add `usePreviewSrcdoc`, `useConsoleCapture`, `useErrorCapture`, `useKeyboardShortcuts` | 4 hooks missing (some logic is inline) |
+| **Utils/Lib** | `src/utils/previewBuilder.ts` | `src/lib/` with `idb.ts`, `vfs.ts`, `preview-builder.ts`, `console-capture-script.ts`, `zip-export.ts`, `templates.ts`, `file-utils.ts`, `codemirror/` | Most lib files not created yet |
+| **Pages** | None (all in `App.tsx`) | `src/pages/SingleFileEditor.tsx`, `ProjectEditor.tsx` | Not created yet |
+| **Router** | None | `src/router/index.tsx` | React Router not installed yet |
+| **UI Components** | None | `src/components/ui/` (shadcn) | shadcn/ui not initialized yet |
+| **Workflows** | `deploy.yml` | `ci.yml` + `deploy.yml` | CI workflow not created yet |
 
 ---
 
@@ -166,22 +93,21 @@ liveframe/
 | File | Primary Responsibility |
 |------|----------------------|
 | `src/main.tsx` | Mount React app, import global CSS |
-| `src/App.tsx` | Theme provider, router provider, error boundary |
-| `src/index.css` | Tailwind v4 `@import`, `@theme inline`, CSS variables for both themes |
-| `src/stores/projectStore.ts` | Project CRUD, file tree operations, mode switching, external resources |
-| `src/stores/editorStore.ts` | File content per ID, dirty state, cursor/scroll positions, editor view refs |
-| `src/stores/uiStore.ts` | Theme, console entries, error overlay, auto-refresh, device frame preference |
-| `src/lib/vfs.ts` | VirtualFileSystem class with flat Map + path index, tree building |
-| `src/lib/idb.ts` | IndexedDB schema, initialization, CRUD operations |
-| `src/lib/preview-builder.ts` | `assembleDocument()` — combines HTML + CSS + JS + external resources + console capture script |
-| `src/components/editor/CodeMirrorEditor.tsx` | Lazy-loaded CodeMirror component (separate vendor chunk) |
-| `vite.config.ts` | Vite config with dynamic base path, Tailwind v4 plugin, CodeMirror chunk splitting |
-
----
-
-## Notes for Development Agent
-
-- The `src/components/ui/` directory will be populated by `npx shadcn@latest add <component>` commands — do not manually create these files
-- The `src/lib/codemirror/` directory contains theme and extension configurations that read from CSS custom properties, enabling seamless theme switching
-- The `src/stores/` directory uses Zustand with `immer` middleware for `projectStore` only; `editorStore` and `uiStore` use plain Zustand for performance
-- The `docs/plan/` directory is reserved for planning documents; the Development Agent may store task plans and worklogs here
+| `src/App.tsx` | Root layout — toolbar + resizable panels (editor/preview/console) |
+| `src/index.css` | Tailwind v4 `@import`, `@theme`, custom fonts (Inter, JetBrains Mono), animations |
+| `src/types.ts` | Shared TypeScript types (`Theme`, `ActiveTab`, `ConsoleEntry`) |
+| `src/stores/editorStore.ts` | Editor content (html, css, javascript strings, activeTab) + default boilerplate |
+| `src/stores/uiStore.ts` | Theme, autoRefresh, consoleEntries, errorOverlay, isConsoleOpen |
+| `src/utils/previewBuilder.ts` | `assembleDocument()` — combines HTML + CSS + JS + console capture script into srcdoc |
+| `src/hooks/useAutoRefresh.ts` | 400ms debounced auto-refresh; manual trigger support |
+| `src/hooks/useTheme.ts` | Applies dark/light class to `<html>`, listens for system preference changes |
+| `src/components/CodeMirrorEditor.tsx` | CodeMirror 6 editor with language extensions |
+| `src/components/PreviewFrame.tsx` | Iframe preview + device mode switching + error overlay display + postMessage listener |
+| `src/components/Toolbar.tsx` | Top bar with logo, auto-run toggle, manual run, reset, theme toggle |
+| `src/components/ConsolePanel.tsx` | Console output with color-coded entries, search, clear |
+| `src/components/SingleFileTabs.tsx` | HTML/CSS/JS tab switching with icons |
+| `src/components/ThemeToggle.tsx` | Light/Dark/System selector |
+| `src/components/ResizeHandle.tsx` | Custom resize handle with visual feedback |
+| `.github/workflows/deploy.yml` | Auto-deploy to GitHub Pages on push to main |
+| `public/404.html` | SPA redirect trick for GitHub Pages |
+| `vite.config.ts` | Vite config with dynamic `base` path from `VITE_BASE_PATH` env var |
