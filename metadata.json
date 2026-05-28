@@ -1,0 +1,6 @@
+{
+  "name": "LiveFrame",
+  "description": "A browser-based HTML/CSS/JS code editor with instant live preview, resizable panels, console capture, and custom theme layouts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
