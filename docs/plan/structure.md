@@ -20,9 +20,11 @@ liveframe/
 │       ├── synthesis.md                     # Synthesis report from research
 │       ├── structure.md                     # This file — current project structure
 │       ├── tasks/
-│       │   └── 1 - plan-update-and-ghpages-deploy.md
+│       │   ├── 1 - plan-update-and-ghpages-deploy.md
+│       │   └── 2 - complete-phase-0.md
 │       ├── worklogs/
-│       │   └── (to be created)
+│       │   ├── 1 - worklog.md
+│       │   └── (more to come)
 │       └── research/
 │           ├── LiveFrame_general_architect_report.md
 │           ├── LiveFrame_editor_preview_report.md
@@ -35,22 +37,37 @@ liveframe/
 │
 ├── src/
 │   ├── main.tsx                             # Entry point — renders App
-│   ├── App.tsx                              # Root component — layout + toolbar + panels
+│   ├── App.tsx                              # Root component — theme hook + AppLayout
 │   ├── index.css                            # Global styles + Tailwind v4 + theme vars + fonts
+│   ├── vite-env.d.ts                        # Vite type declarations
 │   ├── types.ts                             # Shared types: Theme, ActiveTab, ConsoleEntry
 │   │
 │   ├── components/
-│   │   ├── CodeMirrorEditor.tsx             # CodeMirror 6 editor (eager, not lazy yet)
-│   │   ├── Toolbar.tsx                      # Top toolbar (logo, auto-run, run, reset, theme)
-│   │   ├── PreviewFrame.tsx                 # Preview iframe + device mode + error overlay
-│   │   ├── SingleFileTabs.tsx               # HTML|CSS|JS tab bar
-│   │   ├── ConsolePanel.tsx                 # Console output panel (entries, search, clear)
-│   │   ├── ThemeToggle.tsx                  # Dark/Light/System toggle
-│   │   └── ResizeHandle.tsx                 # Custom drag handle for panel resizing
+│   │   ├── layout/
+│   │   │   ├── AppLayout.tsx                # Root layout: toolbar + resizable panels
+│   │   │   ├── SingleFileLayout.tsx         # Single-file mode layout (placeholder for Phase 1)
+│   │   │   └── ResizeHandle.tsx             # Custom drag handle for panel resizing
+│   │   │
+│   │   ├── editor/
+│   │   │   ├── CodeMirrorEditor.tsx         # Lazy-loaded CM6 editor with Emmet support
+│   │   │   ├── SingleFileTabs.tsx           # HTML|CSS|JS tab bar
+│   │   │   └── EditorSkeleton.tsx           # Loading skeleton for lazy-loaded CodeMirror
+│   │   │
+│   │   ├── preview/
+│   │   │   └── PreviewFrame.tsx             # Preview iframe + device mode + error overlay
+│   │   │
+│   │   ├── console/
+│   │   │   └── ConsolePanel.tsx             # Console output panel (entries, search, clear)
+│   │   │
+│   │   └── toolbar/
+│   │       ├── Toolbar.tsx                  # Top toolbar (logo, reset, theme)
+│   │       ├── RefreshControls.tsx          # Auto-run toggle + manual run button
+│   │       └── ThemeToggle.tsx              # Dark/Light/System toggle
 │   │
 │   ├── stores/
 │   │   ├── editorStore.ts                   # Editor content (html, css, js, activeTab)
-│   │   └── uiStore.ts                       # UI state (theme, autoRefresh, console, errors)
+│   │   ├── uiStore.ts                       # UI state (theme, autoRefresh, console, errors)
+│   │   └── layoutStore.ts                   # Layout state (isConsoleOpen, mode, isFileTreeOpen)
 │   │
 │   ├── hooks/
 │   │   ├── useTheme.ts                      # Theme detection + application
@@ -68,23 +85,8 @@ liveframe/
 ├── package-lock.json                        # Locked dependency versions
 ├── tsconfig.json                            # TypeScript configuration
 ├── vite.config.ts                           # Vite + Tailwind v4 + dynamic base path
-└── metadata.json                            # Project metadata
+└── README.md                                # Project documentation
 ```
-
----
-
-## Comparison: Current vs Target Structure
-
-| Category | Current State | Target State (from Plan) | Gap |
-|----------|--------------|-------------------------|-----|
-| **Components** | Flat `src/components/` | Subdirectories: `layout/`, `editor/`, `preview/`, `console/`, `toolbar/`, `shared/`, `ui/` | Need to reorganize into subdirectories |
-| **Stores** | `editorStore.ts`, `uiStore.ts` | Add `projectStore.ts`, `layoutStore.ts` | 2 stores missing |
-| **Hooks** | `useTheme.ts`, `useAutoRefresh.ts` | Add `usePreviewSrcdoc`, `useConsoleCapture`, `useErrorCapture`, `useKeyboardShortcuts` | 4 hooks missing (some logic is inline) |
-| **Utils/Lib** | `src/utils/previewBuilder.ts` | `src/lib/` with `idb.ts`, `vfs.ts`, `preview-builder.ts`, `console-capture-script.ts`, `zip-export.ts`, `templates.ts`, `file-utils.ts`, `codemirror/` | Most lib files not created yet |
-| **Pages** | None (all in `App.tsx`) | `src/pages/SingleFileEditor.tsx`, `ProjectEditor.tsx` | Not created yet |
-| **Router** | None | `src/router/index.tsx` | React Router not installed yet |
-| **UI Components** | None | `src/components/ui/` (shadcn) | shadcn/ui not initialized yet |
-| **Workflows** | `deploy.yml` | `ci.yml` + `deploy.yml` | CI workflow not created yet |
 
 ---
 
@@ -93,21 +95,35 @@ liveframe/
 | File | Primary Responsibility |
 |------|----------------------|
 | `src/main.tsx` | Mount React app, import global CSS |
-| `src/App.tsx` | Root layout — toolbar + resizable panels (editor/preview/console) |
+| `src/App.tsx` | Root component — initializes theme, renders AppLayout |
 | `src/index.css` | Tailwind v4 `@import`, `@theme`, custom fonts (Inter, JetBrains Mono), animations |
 | `src/types.ts` | Shared TypeScript types (`Theme`, `ActiveTab`, `ConsoleEntry`) |
 | `src/stores/editorStore.ts` | Editor content (html, css, javascript strings, activeTab) + default boilerplate |
-| `src/stores/uiStore.ts` | Theme, autoRefresh, consoleEntries, errorOverlay, isConsoleOpen |
+| `src/stores/uiStore.ts` | Theme, autoRefresh, consoleEntries, errorOverlay |
+| `src/stores/layoutStore.ts` | Panel visibility (isConsoleOpen), mode (single-file/project), file tree visibility |
 | `src/utils/previewBuilder.ts` | `assembleDocument()` — combines HTML + CSS + JS + console capture script into srcdoc |
 | `src/hooks/useAutoRefresh.ts` | 400ms debounced auto-refresh; manual trigger support |
 | `src/hooks/useTheme.ts` | Applies dark/light class to `<html>`, listens for system preference changes |
-| `src/components/CodeMirrorEditor.tsx` | CodeMirror 6 editor with language extensions |
-| `src/components/PreviewFrame.tsx` | Iframe preview + device mode switching + error overlay display + postMessage listener |
-| `src/components/Toolbar.tsx` | Top bar with logo, auto-run toggle, manual run, reset, theme toggle |
-| `src/components/ConsolePanel.tsx` | Console output with color-coded entries, search, clear |
-| `src/components/SingleFileTabs.tsx` | HTML/CSS/JS tab switching with icons |
-| `src/components/ThemeToggle.tsx` | Light/Dark/System selector |
-| `src/components/ResizeHandle.tsx` | Custom resize handle with visual feedback |
+| `src/components/layout/AppLayout.tsx` | Root layout shell — lazy-loaded CodeMirror in Suspense, resizable panels |
+| `src/components/editor/CodeMirrorEditor.tsx` | Lazy-loaded CodeMirror 6 with Emmet (abbreviationTracker) for HTML/CSS |
+| `src/components/editor/EditorSkeleton.tsx` | Shimmer loading skeleton shown while CodeMirror loads |
+| `src/components/editor/SingleFileTabs.tsx` | HTML/CSS/JS tab switching with icons |
+| `src/components/preview/PreviewFrame.tsx` | Iframe preview + device mode switching + error overlay + postMessage listener |
+| `src/components/console/ConsolePanel.tsx` | Console output with color-coded entries, search, clear |
+| `src/components/toolbar/Toolbar.tsx` | Top bar with logo, RefreshControls, reset, ThemeToggle |
+| `src/components/toolbar/RefreshControls.tsx` | Auto-run toggle + manual run button (extracted from Toolbar) |
+| `src/components/toolbar/ThemeToggle.tsx` | Light/Dark/System selector |
+| `src/components/layout/ResizeHandle.tsx` | Custom resize handle with visual feedback |
 | `.github/workflows/deploy.yml` | Auto-deploy to GitHub Pages on push to main |
 | `public/404.html` | SPA redirect trick for GitHub Pages |
 | `vite.config.ts` | Vite config with dynamic `base` path from `VITE_BASE_PATH` env var |
+
+---
+
+## Build Output
+
+| Chunk | Size | Gzipped | Notes |
+|-------|------|---------|-------|
+| `index.js` | ~265 KB | ~82 KB | Main app bundle (React, Zustand, panels) |
+| `CodeMirrorEditor.js` | ~661 KB | ~228 KB | Lazy-loaded; only fetched when editor renders |
+| `index.css` | ~52 KB | ~9 KB | All styles |
