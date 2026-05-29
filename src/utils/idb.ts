@@ -11,6 +11,18 @@ import type {
   FileEntry,
 } from '../types/project';
 
+// Lazy import to avoid circular dependency — projectStore is only needed at fire-time
+let _getFiles: (() => Record<FileId, FileEntry>) | null = null;
+function getFileGetter(): () => Record<FileId, FileEntry> {
+  if (!_getFiles) {
+    // Dynamic require-style import to break the circular dependency
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { useProjectStore } = require('../stores/projectStore');
+    _getFiles = () => useProjectStore.getState().files;
+  }
+  return _getFiles;
+}
+
 // ─── Database Schema ──────────────────────────────────────────
 
 const DB_NAME = 'liveframe-db';
@@ -107,8 +119,17 @@ export async function isIDBAvailable(): Promise<boolean> {
         db.createObjectStore('test');
       },
     });
-    await testDB.deleteObjectStore('test');
-    dbInstance = null; // Don't cache test DB
+    // Properly close the test DB and delete it — leaving it open blocks future upgrades
+    testDB.close();
+    await new Promise<void>((resolve, reject) => {
+      const req = indexedDB.deleteDatabase('__liveframe_test__');
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+      req.onblocked = () => {
+        console.warn('Test DB delete blocked — another tab may hold it open');
+        resolve(); // Don't block startup over a blocked delete
+      };
+    });
     idbAvailable = true;
   } catch {
     idbAvailable = false;
@@ -326,10 +347,11 @@ const autoSaveTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 /**
  * Schedule a debounced auto-save for a file's content.
  * Content changes debounce at the configured interval (default 3s).
+ * Re-fetches the file from the store at fire-time to avoid stale closure data.
  */
 export function scheduleContentSave(
   fileId: FileId,
-  file: FileEntry,
+  _file: FileEntry,
   delayMs: number = 3000
 ): void {
   if (autoSaveTimers[fileId]) {
@@ -337,8 +359,10 @@ export function scheduleContentSave(
   }
 
   autoSaveTimers[fileId] = setTimeout(async () => {
-    if (file.isDirty) {
-      await saveFileToIDB(file);
+    // Re-fetch the live file from the store instead of using the captured closure
+    const currentFile = getFileGetter()()[fileId];
+    if (currentFile?.isDirty) {
+      await saveFileToIDB(currentFile);
     }
     delete autoSaveTimers[fileId];
   }, delayMs);

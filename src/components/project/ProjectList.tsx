@@ -20,7 +20,7 @@ import type { Project, ProjectId } from '../../types/project';
 interface ProjectListProps {
   /** Optional route-aware navigation callbacks */
   onOpenProject?: (projectId: ProjectId) => void;
-  onNewProject?: () => void;
+  onNewProject?: (name: string) => void;
 }
 
 export default function ProjectList({ onOpenProject, onNewProject }: ProjectListProps) {
@@ -39,7 +39,9 @@ export default function ProjectList({ onOpenProject, onNewProject }: ProjectList
     if (!newProjectName.trim()) return;
 
     if (onNewProject) {
-      onNewProject();
+      onNewProject(newProjectName.trim());
+      setNewProjectName('');
+      setIsCreating(false);
       return;
     }
 
@@ -99,7 +101,7 @@ export default function ProjectList({ onOpenProject, onNewProject }: ProjectList
         <button
           onClick={() => {
             if (onNewProject) {
-              onNewProject();
+              setIsCreating(true);
             } else {
               setIsCreating(true);
             }

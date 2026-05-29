@@ -1,239 +1,479 @@
-# Fixing Plan — Panel Resize Issues
+# Fixing Plan — LiveFrame Runtime Bugs & Code Quality Issues
 
-> **Created**: 2026-05-29
-> **Status**: Complete ✅
-> **Affects**: File Tree panel, Console panel
-> **Working**: Editor panel, Preview panel
-
----
-
-## Problem Statement
-
-The editor and preview panels resize freely via their slider (Separator + ResizeHandle), but the **File Tree** panel and **Console** panel hit a hard lower bound very quickly — the slider stops at an unexpectedly small size and the user cannot shrink these panels below a certain threshold, nor expand them freely. This makes the layout feel rigid on those two sides.
+> **Created**: 2026-05-29  
+> **Status**: Plan Ready  
+> **Scope**: Project mode not working, panel sliders stuck, IDB persistence broken, and code quality issues  
+> **Based on**: Full codebase analysis of all 30+ source files
 
 ---
 
-## Root Cause Analysis
+## Bug Reports by Severity
 
-### Issue 1 — File Tree Panel: `minSize={12}` + Content Intrinsic Size
-
-**Location**: `src/components/project/ProjectLayout.tsx` line 40–45
-
-```tsx
-<Panel
-  defaultSize={18}
-  minSize={12}
-  maxSize={35}
-  className="flex flex-col h-full overflow-hidden"
->
-  <FileTree />
-</Panel>
-```
-
-**Problems**:
-
-1. **`minSize={12}` is too restrictive** — 12% of a 1920px screen is ~230px, which seems OK, but the `react-resizable-panels` library computes size as a **percentage of the Group's total space**. Because the file tree shares the horizontal Group with the editor (defaultSize=50) and preview (defaultSize=50), the effective available space is already limited. When dragging the separator left (shrinking the tree), the editor panel tries to grow, but its `minSize={25}` prevents it from absorbing all the freed space — creating a dead zone.
-
-2. **`maxSize={35}` caps expansion** — The tree cannot grow beyond 35%, which prevents the user from making it wide enough to read long file names. This is overly conservative.
-
-3. **No `minSize` on the FileTree's inner content** — The `<FileTree>` component has a header bar (`px-3 py-2`) and tree rows with `text-xs font-medium`. These have an intrinsic minimum width (~140px for "Files" header + buttons). The `flex flex-col` layout doesn't enforce a CSS `min-width`, so the panel can visually collapse below the content's readable width before the `minSize` kicks in, creating a "stuck" feeling.
-
-4. **Conditional rendering creates panel count mismatch** — The file tree panel + separator are wrapped in `{isFileTreeOpen && ...}`, which means when the tree is hidden, the horizontal Group only has 2 panels (editor + preview). When the tree appears, it suddenly has 3 panels. The `react-resizable-panels` library recalculates sizes, and the `defaultSize` values (18 + 50 + 50 = 118%) exceed 100%, causing the library to redistribute sizes in unexpected ways that clamp resize behavior.
-
-### Issue 2 — Console Panel: `minSize={10}` + Inconsistent Group Size
-
-**Location**: `src/components/project/ProjectLayout.tsx` line 86–93 and `src/components/layout/AppLayout.tsx` line 78–87
-
-```tsx
-<Panel defaultSize={25} minSize={10} maxSize={50} className="flex flex-col overflow-hidden shadow-inner ...">
-  <ConsolePanel />
-</Panel>
-```
-
-**Problems**:
-
-1. **Same conditional rendering issue** — The console panel + separator are wrapped in `{isConsoleOpen && ...}`. When toggled on, the vertical Group goes from 1 panel (top) to 2 panels (top + console). The `defaultSize={75}` + `defaultSize={25}` = 100% works initially, but after any manual resize, toggling the console off and on again causes the library to reset to `defaultSize`, which may conflict with the current layout state.
-
-2. **ConsolePanel has a fixed header + search input with `w-32 sm:w-44`** — The search input and toolbar buttons have intrinsic minimum heights. With `minSize={10}` (10% of a typical screen height of ~800px = 80px), the console header (~32px) + one log row (~24px) already consumes most of that 80px. The user can barely see any content, and the slider feels like it "stops" because there's no visible benefit to shrinking further.
-
-3. **Collapsed console state renders outside the Group** — When `isConsoleOpen` is false, a `<div className="flex-shrink-0"><ConsolePanel /></div>` is rendered outside the `<Group>`, which creates a disconnected mini console bar. This breaks the resize mental model — the user expects the separator to still be there but collapsed, not a separate floating element.
-
-4. **`minSize={10}` is too small to be useful, `maxSize={50}` is fine** — The practical minimum for the console to be usable is ~15% (enough to see the header + 2–3 log rows). Below that, it's essentially invisible, so the slider feels broken.
-
-### Issue 3 — `defaultSize` Values Don't Sum to 100% When File Tree is Visible
-
-In `ProjectLayout.tsx`, the horizontal Group contains:
-- File Tree: `defaultSize={18}`
-- Editor: `defaultSize={50}`
-- Preview: `defaultSize={50}`
-
-**Total = 118%** — This exceeds 100%. `react-resizable-panels` handles this by proportionally rescaling, but it means the initial visual split is not 18/50/50 — it's approximately 16/43/43. This mismatch between declared and actual sizes makes the resize constraints (minSize/maxSize) behave unexpectedly relative to what the user sees.
-
-The same issue exists in `AppLayout.tsx` for the single-file mode: editor `defaultSize={50}` + preview `defaultSize={50}` = 100%, which is correct. But the vertical split: top `defaultSize={75}` + console `defaultSize={25}` = 100%, which is fine.
+### 🔴 CRITICAL — App-Breaking Bugs
 
 ---
 
-## Fix Plan
+#### BUG 1 — All `onResize` callbacks call `setTopPanelSize` (copy-paste error)
 
-### Fix 1 — Correct `defaultSize` Values to Sum to 100%
+**Files**: `src/components/project/ProjectLayout.tsx` lines 83, 98, 127, 147  
+**Also**: `src/components/layout/AppLayout.tsx` line 108
 
-**File**: `src/components/project/ProjectLayout.tsx`
-
-| Panel | Current | Fixed |
-|-------|---------|-------|
-| File Tree | 18 | 18 |
-| Editor | 50 | 41 |
-| Preview | 50 | 41 |
-| **Total** | **118** | **100** |
-
-For single-file mode (`AppLayout.tsx`), the editor/preview split already sums to 100% — no change needed.
-
-### Fix 2 — Relax `minSize` / `maxSize` on File Tree Panel
-
-**File**: `src/components/project/ProjectLayout.tsx`
-
-| Constraint | Current | Fixed | Reason |
-|------------|---------|-------|--------|
-| `minSize` | 12 | 5 | Allow shrinking to ~96px on 1920px screen — enough for icon-only tree |
-| `maxSize` | 35 | 45 | Allow wider tree for long file names / deep nesting |
-
-### Fix 3 — Adjust Console `minSize` for Practical Usability
-
-**Files**: `src/components/project/ProjectLayout.tsx`, `src/components/layout/AppLayout.tsx`
-
-| Constraint | Current | Fixed | Reason |
-|------------|---------|-------|--------|
-| `minSize` | 10 | 8 | Allow smaller but not useless; 8% of ~800px = 64px — just the header + 1 row |
-| `maxSize` | 50 | 60 | Allow console to take up more screen when debugging heavily |
-
-### Fix 4 — Add CSS `min-width` / `min-height` on Inner Panel Content
-
-**File**: `src/components/project/FileTree.tsx`
-
-Add to the root `<div>`:
+**Current (buggy) code** — `ProjectLayout.tsx`:
 ```tsx
-<div className="flex flex-col h-full min-w-[120px] bg-slate-50 dark:bg-slate-900/40 ...">
+// File Tree panel (line 83)
+onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}  // ❌
+
+// Editor panel (line 98)
+onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}  // ❌
+
+// Preview panel (line 127)
+onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}  // ❌
+
+// Console panel (line 147)
+onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}  // ❌
 ```
 
-This ensures the tree content has a minimum readable width, and the panel library will respect it as a floor when resizing.
-
-**File**: `src/components/console/ConsolePanel.tsx`
-
-Add to the root `<div>`:
+**AppLayout.tsx** (line 108):
 ```tsx
-<div className="flex flex-col h-full min-h-[48px] bg-slate-50 dark:bg-slate-900 ...">
+// Console panel
+onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}  // ❌
 ```
 
-This ensures the console header is always fully visible at minimum size.
+**Impact**: Every panel resize overwrites `topPanelSize` instead of the correct per-panel setter. After remount (e.g., mode switch, route change), all panels revert to wrong defaults because `fileTreeSize`, `editorSize`, `previewSize`, `consoleSize` were never updated — only `topPanelSize` was overwritten repeatedly.
 
-### Fix 5 — Replace Conditional Panel Rendering with `collapsible` + `collapsedSize`
+This is the **root cause** of "console slider and project tree slider stop and can't expand freely" — when the component remounts after a mode switch or route change, the stored sizes for individual panels are still the initial defaults (18, 41, 41, 25), but `topPanelSize` has been overwritten to whatever the last resized panel's size was, causing the top panel's `defaultSize` to be wrong.
 
-Instead of conditionally rendering/removing panels from the Group (which causes resize recalculations), use `react-resizable-panels`' built-in `collapsible` and `collapsedSize` props. This keeps the panel in the DOM but collapsed to a minimal size, maintaining consistent Group composition.
-
-**File**: `src/components/project/ProjectLayout.tsx`
-
+**Fix**: Replace each `onResize` with the correct setter:
 ```tsx
-{/* File Tree Panel — always in DOM, collapsible */}
-<Panel
-  defaultSize={18}
-  minSize={5}
-  maxSize={45}
-  collapsible
-  collapsedSize={0}
-  onCollapse={() => useLayoutStore.getState().setIsFileTreeOpen(false)}
-  onExpand={() => useLayoutStore.getState().setIsFileTreeOpen(true)}
-  className="flex flex-col h-full overflow-hidden"
->
-  <FileTree />
-</Panel>
-<Separator className="outline-none focus:ring-0">
-  <ResizeHandle direction="horizontal" />
-</Separator>
+// File Tree panel
+onResize={(panelSize) => setFileTreeSize(panelSize.asPercentage)}
+
+// Editor panel
+onResize={(panelSize) => setEditorSize(panelSize.asPercentage)}
+
+// Preview panel
+onResize={(panelSize) => setPreviewSize(panelSize.asPercentage)}
+
+// Console panel
+onResize={(panelSize) => setConsoleSize(panelSize.asPercentage)}
 ```
 
-```tsx
-{/* Console Panel — always in DOM, collapsible */}
-<Panel
-  defaultSize={25}
-  minSize={8}
-  maxSize={60}
-  collapsible
-  collapsedSize={0}
-  onCollapse={() => useLayoutStore.getState().setIsConsoleOpen(false)}
-  onExpand={() => useLayoutStore.getState().setIsConsoleOpen(true)}
-  className="flex flex-col overflow-hidden shadow-inner font-sans antialiased"
->
-  <ConsolePanel />
-</Panel>
-```
-
-**File**: `src/components/layout/AppLayout.tsx`
-
-Apply the same `collapsible` + `collapsedSize` pattern to the console panel in single-file mode.
-
-Remove the floating `<div className="flex-shrink-0"><ConsolePanel /></div>` fallback that renders outside the Group when the console is closed.
-
-### Fix 6 — Store Panel Sizes in layoutStore for Persistence
-
-**File**: `src/stores/layoutStore.ts`
-
-Add persisted panel sizes so that user resize preferences survive mode switches and page reloads:
-
-```typescript
-interface LayoutState {
-  // ... existing fields ...
-  /** Persisted panel sizes (percentages) */
-  fileTreeSize: number;
-  editorSize: number;
-  previewSize: number;
-  consoleSize: number;
-  topPanelSize: number;
-  /** Setters for panel sizes */
-  setFileTreeSize: (size: number) => void;
-  setEditorSize: (size: number) => void;
-  setPreviewSize: (size: number) => void;
-  setConsoleSize: (size: number) => void;
-  setTopPanelSize: (size: number) => void;
-}
-```
-
-Wire `<Panel onResize={(size) => ...} />` to update these values, and use them as `defaultSize` on next render.
+Same fix in `AppLayout.tsx` for the console panel.
 
 ---
 
-## Implementation Order
+#### BUG 2 — `isIDBAvailable()` always returns `false`, disabling ALL persistence
 
-| Step | Fix | Files | Priority |
-|------|-----|-------|----------|
-| 1 | Fix defaultSize to sum to 100% | `ProjectLayout.tsx` | **Critical** — this is the primary cause |
-| 2 | Relax minSize/maxSize | `ProjectLayout.tsx`, `AppLayout.tsx` | **High** — directly enables freer resizing |
-| 3 | Add min-width/min-height to content | `FileTree.tsx`, `ConsolePanel.tsx` | **Medium** — prevents content overflow |
-| 4 | Switch to collapsible panels | `ProjectLayout.tsx`, `AppLayout.tsx` | **High** — eliminates panel count mismatch |
-| 5 | Persist panel sizes | `layoutStore.ts`, both layouts | **Low** — nice-to-have for UX |
-| 6 | Remove floating console fallback | `AppLayout.tsx`, `ProjectLayout.tsx` | **Medium** — cleanup after step 4 |
+**File**: `src/utils/idb.ts` lines 105-111
+
+**Current (buggy) code**:
+```tsx
+const testDB = await openDB('__liveframe_test__', 1, {
+  upgrade(db) {
+    db.createObjectStore('test');
+  },
+});
+await testDB.deleteObjectStore('test');  // ❌ THROWS InvalidStateError
+dbInstance = null;
+idbAvailable = true;
+```
+
+**Impact**: `deleteObjectStore()` can only be called inside an `onupgradeneeded` handler (i.e., during the `upgrade()` callback). Calling it after the database is open throws `InvalidStateError`. The `catch` block sets `idbAvailable = false`, so **all IDB operations are permanently disabled** — no projects, files, or settings are ever persisted. Every page refresh loses all work.
+
+This also explains the runtime `Symbol.iterator` error from the previous session: when IDB hydration returns empty data (because it's disabled), and the store defaults are used, certain selectors may return `undefined` during the async hydration race condition.
+
+**Fix**:
+```tsx
+const testDB = await openDB('__liveframe_test__', 1, {
+  upgrade(db) {
+    db.createObjectStore('test');
+  },
+});
+testDB.close();
+await deleteDB('__liveframe_test__');
+dbInstance = null;  // Don't cache test DB connection
+idbAvailable = true;
+```
+
+Import `deleteDB` from the `idb` package (it's already exported).
 
 ---
 
-## Expected Result After Fixes
-
-- **File Tree**: User can freely drag the separator from icon-only width (~5%) up to a wide view (~45%). The tree header and rows remain readable at all sizes. Collapsing to 0% hides the tree cleanly without removing it from the DOM.
-- **Console**: User can freely drag the separator from header-only height (~8%) up to a large console view (~60%). The search bar and log rows remain usable at all sizes. Collapsing to 0% hides the console cleanly.
-- **Editor / Preview**: Continue working as before — no regression.
-- **Mode switching**: Panel sizes persist and don't jump unexpectedly when toggling file tree or console visibility.
+### 🟠 HIGH — Feature-Breaking Bugs
 
 ---
 
-## Conventional Commit (for when fix is implemented)
+#### BUG 3 — Route handlers fight with user-initiated mode switches
+
+**File**: `src/App.tsx` lines 59-68
+
+**Current (buggy) code**:
+```tsx
+function SingleFileRouteHandler() {
+  const setMode = useLayoutStore((s) => s.setMode);
+  const activeProject = useProjectStore((s) => s.activeProject);
+
+  useEffect(() => {
+    setMode('single-file');  // ❌ Re-runs on every activeProject change
+    if (!activeProject) {
+      const projectStore = useProjectStore.getState();
+      if (projectStore.projects['proj_virtual_default']) {
+        projectStore.setActiveProject('proj_virtual_default');
+      }
+    }
+  }, [setMode, activeProject]);  // ❌ activeProject causes re-run
+```
+
+**Impact**: When the user clicks the "Project" mode switch button while at `/`:
+1. `switchToProjectMode()` creates a new `activeProject` object (mode: 'project')
+2. This triggers the `useEffect` because `activeProject` changed
+3. The effect calls `setMode('single-file')`, immediately reverting the mode switch
+4. **Result: Project mode never activates on the root route.**
+
+This is the root cause of "project mode not working or not showing anything."
+
+**Fix**: Only set mode on initial mount, not on every `activeProject` change:
+```tsx
+function SingleFileRouteHandler() {
+  const setMode = useLayoutStore((s) => s.setMode);
+  const activeProject = useProjectStore((s) => s.activeProject);
+
+  useEffect(() => {
+    setMode('single-file');
+    // Ensure virtual project is active for single-file mode
+    if (!activeProject) {
+      const projectStore = useProjectStore.getState();
+      if (projectStore.projects['proj_virtual_default']) {
+        projectStore.setActiveProject('proj_virtual_default');
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);  // Only run once on mount
+```
+
+Additionally, the mode-switch button should navigate to `/project/:id` when switching to project mode, so the correct route handler is active.
+
+---
+
+#### BUG 4 — `getActiveFileType()` returns `'html'` for all non-virtual project files
+
+**File**: `src/stores/editorStore.ts` line 340
+
+**Current (buggy) code**:
+```tsx
+getActiveFileType: () => {
+  const state = get();
+  if (state.activeFileId) {
+    if (state.activeFileId === VIRTUAL_HTML_FILE_ID) return 'html';
+    if (state.activeFileId === VIRTUAL_CSS_FILE_ID) return 'css';
+    if (state.activeFileId === VIRTUAL_JS_FILE_ID) return 'javascript';
+    // For project mode, derive from file extension in project store
+    return 'html'; // default  ❌ Always returns 'html' for real project files!
+  }
+  return state.activeTab;
+},
+```
+
+**Impact**: Any `.css`, `.js`, `.json` file opened in project mode will be reported as `'html'`. This is currently latent because `CodeMirrorEditor.tsx` derives the file type from `files[activeFileId]?.type` directly instead of using `getActiveFileType()`. But any future consumer of `getActiveFileType()` will get wrong results.
+
+**Fix**: Look up the file type from projectStore:
+```tsx
+getActiveFileType: () => {
+  const state = get();
+  if (state.activeFileId) {
+    if (state.activeFileId === VIRTUAL_HTML_FILE_ID) return 'html';
+    if (state.activeFileId === VIRTUAL_CSS_FILE_ID) return 'css';
+    if (state.activeFileId === VIRTUAL_JS_FILE_ID) return 'javascript';
+    // For project mode, derive from project store
+    const { files } = useProjectStore.getState();
+    const file = files[state.activeFileId];
+    return file?.type ?? 'html';
+  }
+  return state.activeTab;
+},
+```
+
+---
+
+#### BUG 5 — Console toggle button doesn't collapse/expand the panel
+
+**File**: `src/components/console/ConsoleToolbar.tsx` line 24
+
+**Current code**:
+```tsx
+<button onClick={toggleConsole} ...>
+```
+
+**Impact**: `toggleConsole` flips `isConsoleOpen` in layoutStore, which controls whether the console entries are shown/hidden inside `ConsolePanel.tsx`. But the actual `react-resizable-panels` panel uses `onCollapse`/`onExpand` callbacks tied to the separator drag. Clicking the toggle button hides the content but the panel stays at its current size — an empty panel taking up space. The user expects the panel to collapse to 0 when toggled off, and expand back when toggled on.
+
+**Fix**: Use the `react-resizable-panels` imperative handle (`panelRef.collapse()` / `panelRef.expand()`) to actually collapse/expand the panel, instead of just toggling a content-visibility flag:
+
+In `ProjectLayout.tsx` and `AppLayout.tsx`, add a `panelRef` to the console panel:
+```tsx
+import { Panel, type ImperativePanelHandle } from 'react-resizable-panels';
+
+const consolePanelRef = useRef<ImperativePanelHandle>(null);
+
+// Pass ref to Panel
+<Panel ref={consolePanelRef} ...>
+
+// Pass collapse/expand functions to ConsoleToolbar
+<ConsolePanel
+  onCollapse={() => consolePanelRef.current?.collapse()}
+  onExpand={() => consolePanelRef.current?.expand()}
+  isCollapsed={!isConsoleOpen}
+/>
+```
+
+In `ConsoleToolbar.tsx`, use the provided callbacks:
+```tsx
+<button onClick={() => isCollapsed ? onExpand() : onCollapse()} ...>
+```
+
+---
+
+#### BUG 6 — `activeFileId` desync between editorStore and projectStore
+
+**File**: `src/components/project/ProjectFileTabs.tsx` line 165
+
+**Current code**:
+```tsx
+const handleActivate = useCallback(
+  (fileId: FileId) => {
+    setActiveFileId(fileId);  // Only updates editorStore
+  },
+  [setActiveFileId]
+);
+```
+
+**Impact**: Clicking a tab updates `editorStore.activeFileId` but NOT `projectStore.activeProject.activeFileId`. Preview building and persistence use the project store and will reference the wrong file. After reload, the wrong file will be active.
+
+**Fix**: Also update projectStore:
+```tsx
+const handleActivate = useCallback(
+  (fileId: FileId) => {
+    setActiveFileId(fileId);
+    useProjectStore.getState().setActiveFile(fileId);  // Sync to project store
+  },
+  [setActiveFileId]
+);
+```
+
+---
+
+### 🟡 MEDIUM — Code Quality Issues
+
+---
+
+#### BUG 7 — `DEFAULT_HTML/CSS/JS` duplicated in two stores
+
+**Files**: `src/stores/editorStore.ts` lines 65-157, `src/stores/projectStore.ts` lines 29-121
+
+**Impact**: DRY violation. If one set of defaults is updated, the other could be forgotten, causing inconsistency between single-file and project mode defaults.
+
+**Fix**: Extract to a shared module `src/utils/defaults.ts`:
+```tsx
+export const DEFAULT_HTML = `...`;
+export const DEFAULT_CSS = `...`;
+export const DEFAULT_JS = `...`;
+```
+
+Then import in both stores.
+
+---
+
+#### BUG 8 — `resetAll()` doesn't sync project-mode state
+
+**File**: `src/stores/editorStore.ts` lines 171-177
+
+**Current code**:
+```tsx
+resetAll: () =>
+  set({
+    html: DEFAULT_HTML,
+    css: DEFAULT_CSS,
+    javascript: DEFAULT_JS,
+    activeTab: 'html' as ActiveTab,
+    // ❌ Doesn't reset: fileContents, dirtyMap, openTabIds, activeFileId
+  }),
+```
+
+**Impact**: After reset, project mode shows stale content because `fileContents`, `dirtyMap`, `openTabIds`, and `activeFileId` are not reset. The editor shows old file content even though the legacy `html/css/javascript` were reset.
+
+**Fix**:
+```tsx
+resetAll: () =>
+  set({
+    html: DEFAULT_HTML,
+    css: DEFAULT_CSS,
+    javascript: DEFAULT_JS,
+    activeTab: 'html' as ActiveTab,
+    fileContents: {
+      [VIRTUAL_HTML_FILE_ID]: DEFAULT_HTML,
+      [VIRTUAL_CSS_FILE_ID]: DEFAULT_CSS,
+      [VIRTUAL_JS_FILE_ID]: DEFAULT_JS,
+    },
+    dirtyMap: {},
+    openTabIds: [VIRTUAL_HTML_FILE_ID, VIRTUAL_CSS_FILE_ID, VIRTUAL_JS_FILE_ID],
+    activeFileId: VIRTUAL_HTML_FILE_ID,
+  }),
+```
+
+---
+
+#### BUG 9 — `VIRTUAL_PROJECT_ID` hardcoded as string literal
+
+**Files**: `src/App.tsx` line 64, `src/hooks/useAutoRefresh.ts` line 42
+
+**Current code**:
+```tsx
+// App.tsx:64
+if (projectStore.projects['proj_virtual_default']) {  // ❌ hardcoded
+
+// useAutoRefresh.ts:42
+if (activeProject.id === 'proj_virtual_default') {  // ❌ hardcoded
+```
+
+**Impact**: If `VIRTUAL_PROJECT_ID` constant changes, these hardcodes will break silently.
+
+**Fix**: Import and use the constant:
+```tsx
+import { VIRTUAL_PROJECT_ID } from '../types/project';
+// ...
+if (projectStore.projects[VIRTUAL_PROJECT_ID]) {
+// ...
+if (activeProject.id === VIRTUAL_PROJECT_ID) {
+```
+
+---
+
+#### BUG 10 — Dual-write on every keystroke (editorStore + projectStore)
+
+**File**: `src/components/editor/CodeMirrorEditor.tsx` lines 68-71
+
+**Current code**:
+```tsx
+const handleChange = (value: string) => {
+  updateFileContent(activeFileId, value);         // editorStore
+  updateProjectFileContent(activeFileId, value);  // projectStore
+};
+```
+
+**Impact**: Two separate store updates on every keystroke. If one fails or is batched differently, the two stores desync. This also causes two re-renders per keystroke.
+
+**Fix**: Make `updateFileContent` in editorStore automatically sync to projectStore (single source of truth), or derive project file content from editorStore only.
+
+---
+
+### 🟢 LOW — Minor Issues
+
+---
+
+#### BUG 11 — Test DB connection never closed (resource leak)
+
+**File**: `src/utils/idb.ts` line 111
+
+**Impact**: The test DB connection is opened but never properly closed. Minor resource leak.
+
+**Fix**: Addressed as part of BUG 2 fix (close the DB before deleting it).
+
+---
+
+#### BUG 12 — `idbAvailable` cache never invalidated
+
+**File**: `src/utils/idb.ts` line 95
+
+**Impact**: If IDB becomes unavailable later (e.g., user enters private browsing), the cached `true` value means the app will keep trying to use IDB and silently failing.
+
+**Fix**: Reset `idbAvailable = null` when operations fail, so the next call re-checks availability.
+
+---
+
+#### BUG 13 — `scheduleContentSave` captures stale `FileEntry` snapshot
+
+**File**: `src/utils/idb.ts` lines 330-345
+
+**Impact**: The function receives a `FileEntry` object and debounces the save. If the file content changes again before the debounce fires, the old snapshot is saved to IDB, overwriting newer data.
+
+**Fix**: Inside the debounced callback, read the latest file state from the store getter instead of using the captured snapshot.
+
+---
+
+## Fix Implementation Plan
+
+### Phase 1 — Critical Fixes (Must-do first)
+
+| Step | Bug | File(s) | Change |
+|------|-----|---------|--------|
+| 1.1 | BUG 2 | `src/utils/idb.ts` | Fix `isIDBAvailable()` — close test DB and use `deleteDB()` |
+| 1.2 | BUG 3 | `src/App.tsx` | Remove `activeProject` from `SingleFileRouteHandler` useEffect deps, run once on mount |
+| 1.3 | BUG 1 | `ProjectLayout.tsx`, `AppLayout.tsx` | Fix all `onResize` callbacks to use correct setters |
+| 1.4 | BUG 5 | `ConsoleToolbar.tsx`, `ConsolePanel.tsx`, both layouts | Use imperative panel handle for collapse/expand |
+
+### Phase 2 — High-Priority Fixes
+
+| Step | Bug | File(s) | Change |
+|------|-----|---------|--------|
+| 2.1 | BUG 6 | `ProjectFileTabs.tsx` | Sync `activeFileId` to projectStore on tab activate |
+| 2.2 | BUG 4 | `editorStore.ts` | Fix `getActiveFileType()` to look up file type from projectStore |
+| 2.3 | BUG 8 | `editorStore.ts` | Fix `resetAll()` to also reset project-mode state |
+
+### Phase 3 — Code Quality Improvements
+
+| Step | Bug | File(s) | Change |
+|------|-----|---------|--------|
+| 3.1 | BUG 7 | `editorStore.ts`, `projectStore.ts`, new `src/utils/defaults.ts` | Extract shared defaults |
+| 3.2 | BUG 9 | `App.tsx`, `useAutoRefresh.ts` | Replace hardcoded strings with `VIRTUAL_PROJECT_ID` constant |
+| 3.3 | BUG 10 | `CodeMirrorEditor.tsx` | Consolidate dual-write into single source of truth |
+| 3.4 | BUG 13 | `src/utils/idb.ts` | Read latest state in debounced save callback |
+| 3.5 | BUG 12 | `src/utils/idb.ts` | Reset `idbAvailable` cache on operation failure |
+
+---
+
+## Root Cause → User Symptom Mapping
+
+| User Symptom | Root Cause Bug(s) |
+|-------------|-------------------|
+| "Project mode not working / not showing anything" | **BUG 3** — Route handler resets mode to 'single-file' on every activeProject change |
+| "Console slider stops and can't expand freely" | **BUG 1** — Wrong setter in onResize + **BUG 5** — Toggle doesn't collapse panel |
+| "Project tree slider stops and can't expand freely" | **BUG 1** — Wrong setter in onResize causes wrong defaultSize on remount |
+| "Data doesn't persist after page refresh" | **BUG 2** — isIDBAvailable() always returns false |
+| "Wrong syntax highlighting in project mode" | **BUG 4** — getActiveFileType() returns 'html' for all files (latent) |
+| "Reset button doesn't fully reset in project mode" | **BUG 8** — resetAll() doesn't sync project-mode state |
+
+---
+
+## Expected Results After Fixes
+
+- **Project mode**: Clicking "Project" in toolbar switches to project layout with file tree, project tabs, and stays in project mode without reverting.
+- **Panel sliders**: All four sliders (file tree ↔ editor, editor ↔ preview, top ↔ console) resize freely within their min/max bounds. Stored sizes persist across remounts.
+- **Console toggle**: Clicking the console toggle actually collapses/expands the panel, not just hiding the content.
+- **Persistence**: Projects and files survive page refresh via IndexedDB.
+- **Reset**: Reset button clears all state including project-mode file contents.
+- **Syntax highlighting**: Correct CodeMirror language mode for each file type in project mode.
+
+---
+
+## Conventional Commit Message (for implementation)
 
 ```
-fix(layout): correct panel resize constraints for file tree and console
+fix(core): resolve project mode, panel resize, and persistence bugs
 
-- Fix defaultSize values in ProjectLayout to sum to 100% (was 118%)
-- Relax minSize/maxSize on file tree (5–45%) and console (8–60%)
-- Add min-width/min-height to FileTree and ConsolePanel content
-- Switch from conditional rendering to collapsible panels
-- Remove floating console fallback outside Group
-- Persist panel sizes in layoutStore
+CRITICAL:
+- Fix isIDBAvailable() — use deleteDB() instead of deleteObjectStore()
+- Fix SingleFileRouteHandler — run setMode only on mount, not on every change
+- Fix all onResize callbacks — use correct per-panel setters instead of setTopPanelSize
+- Fix console toggle — use imperative panel handle for collapse/expand
 
-Fixes: file tree and console panels unable to resize freely
+HIGH:
+- Sync activeFileId to projectStore on tab activation
+- Fix getActiveFileType() to look up file type from projectStore
+- Fix resetAll() to also reset project-mode state
+
+MEDIUM:
+- Extract DEFAULT_HTML/CSS/JS to shared defaults module
+- Replace hardcoded VIRTUAL_PROJECT_ID strings with constant
+- Consolidate dual-write in CodeMirrorEditor
+
+Fixes: project mode not activating, panel sliders stuck, IDB persistence disabled
 ```

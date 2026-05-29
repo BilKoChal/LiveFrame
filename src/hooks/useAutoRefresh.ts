@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useEditorStore } from '../stores/editorStore';
 import { useProjectStore } from '../stores/projectStore';
 import { useUIStore } from '../stores/uiStore';
@@ -35,8 +35,8 @@ export function useAutoRefresh(manualTrigger: number) {
 
   const [srcDoc, setSrcDoc] = useState('');
 
-  // Determine the source content based on mode
-  const getPreviewContent = () => {
+  // Determine the source content based on mode — wrapped in useCallback to avoid stale closures
+  const getPreviewContent = useCallback(() => {
     if (mode === 'project' && activeProject) {
       // For virtual project (single-file mode stored as project), use legacy assembly with resources
       if (activeProject.id === 'proj_virtual_default') {
@@ -55,7 +55,7 @@ export function useAutoRefresh(manualTrigger: number) {
     // Single-file mode — pass external resources from active project if available
     const externalResources = activeProject?.externalResources ?? [];
     return assembleDocument(html, css, javascript, externalResources);
-  };
+  }, [mode, activeProject, files, fileContents, html, css, javascript]);
 
   // Auto-refresh hook with 400ms debounce
   useEffect(() => {
@@ -67,15 +67,9 @@ export function useAutoRefresh(manualTrigger: number) {
     }, 400);
 
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    html,
-    css,
-    javascript,
-    fileContents,
-    activeProject,
-    mode,
     autoRefresh,
+    getPreviewContent,
     setErrorOverlay,
   ]);
 
@@ -85,14 +79,12 @@ export function useAutoRefresh(manualTrigger: number) {
       setErrorOverlay(null);
       setSrcDoc(getPreviewContent());
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [manualTrigger]);
+  }, [manualTrigger, getPreviewContent, setErrorOverlay]);
 
   // Initial document construction
   useEffect(() => {
     setSrcDoc(getPreviewContent());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [getPreviewContent]);
 
   return srcDoc;
 }

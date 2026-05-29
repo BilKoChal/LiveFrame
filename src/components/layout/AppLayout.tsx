@@ -105,7 +105,7 @@ export default function AppLayout() {
             collapsedSize={0}
             onCollapse={handleConsoleCollapse}
             onExpand={handleConsoleExpand}
-            onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
+            onResize={(panelSize) => setConsoleSize(panelSize.asPercentage)}
             className="flex flex-col overflow-hidden shadow-inner font-sans antialiased"
           >
             <ConsolePanel />

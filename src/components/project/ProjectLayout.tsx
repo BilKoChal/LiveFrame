@@ -80,7 +80,7 @@ export default function ProjectLayout() {
                   collapsedSize={0}
                   onCollapse={handleFileTreeCollapse}
                   onExpand={handleFileTreeExpand}
-                  onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
+                  onResize={(panelSize) => setFileTreeSize(panelSize.asPercentage)}
                   className="flex flex-col h-full overflow-hidden"
                 >
                   <FileTree />
@@ -95,7 +95,7 @@ export default function ProjectLayout() {
             <Panel
               defaultSize={editorSize}
               minSize={20}
-              onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
+              onResize={(panelSize) => setEditorSize(panelSize.asPercentage)}
               className="flex flex-col h-full bg-slate-900 dark:bg-slate-950/20 overflow-hidden shadow-sm"
             >
               {/* Show project tabs in project mode, single file tabs otherwise */}
@@ -124,7 +124,7 @@ export default function ProjectLayout() {
             <Panel
               defaultSize={previewSize}
               minSize={20}
-              onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
+              onResize={(panelSize) => setPreviewSize(panelSize.asPercentage)}
               className="flex flex-col h-full bg-slate-100 dark:bg-slate-950/40 overflow-hidden"
             >
               <PreviewFrame manualTrigger={manualTrigger} />
@@ -144,7 +144,7 @@ export default function ProjectLayout() {
           collapsedSize={0}
           onCollapse={handleConsoleCollapse}
           onExpand={handleConsoleExpand}
-          onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
+          onResize={(panelSize) => setConsoleSize(panelSize.asPercentage)}
           className="flex flex-col overflow-hidden shadow-inner font-sans antialiased"
         >
           <ConsolePanel />

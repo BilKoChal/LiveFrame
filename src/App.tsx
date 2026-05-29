@@ -82,9 +82,9 @@ function ProjectListRoute() {
     navigate(`/project/${projectId}`);
   };
 
-  const handleNewProject = () => {
+  const handleNewProject = (name: string) => {
     const projectStore = useProjectStore.getState();
-    const projectId = projectStore.createProject('New Project', 'project');
+    const projectId = projectStore.createProject(name, 'project');
     setActiveProject(projectId);
     setMode('project');
     navigate(`/project/${projectId}`);
