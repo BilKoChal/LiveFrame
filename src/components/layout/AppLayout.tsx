@@ -68,7 +68,7 @@ export default function AppLayout() {
           <Panel
             defaultSize={topPanelSize}
             minSize={30}
-            onResize={(size) => setTopPanelSize(size as unknown as number)}
+            onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
           >
             <Group orientation="horizontal">
               {/* Left Column: Code Files Editor */}
@@ -105,7 +105,7 @@ export default function AppLayout() {
             collapsedSize={0}
             onCollapse={handleConsoleCollapse}
             onExpand={handleConsoleExpand}
-            onResize={(size) => setConsoleSize(size as unknown as number)}
+            onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
             className="flex flex-col overflow-hidden shadow-inner font-sans antialiased"
           >
             <ConsolePanel />

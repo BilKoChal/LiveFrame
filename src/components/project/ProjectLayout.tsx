@@ -66,7 +66,7 @@ export default function ProjectLayout() {
         <Panel
           defaultSize={topPanelSize}
           minSize={30}
-          onResize={(size) => setTopPanelSize(size as unknown as number)}
+          onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
         >
           <Group orientation="horizontal">
             {/* File Tree Panel — always in DOM, collapsible */}
@@ -80,7 +80,7 @@ export default function ProjectLayout() {
                   collapsedSize={0}
                   onCollapse={handleFileTreeCollapse}
                   onExpand={handleFileTreeExpand}
-                  onResize={(size) => setFileTreeSize(size as unknown as number)}
+                  onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
                   className="flex flex-col h-full overflow-hidden"
                 >
                   <FileTree />
@@ -95,7 +95,7 @@ export default function ProjectLayout() {
             <Panel
               defaultSize={editorSize}
               minSize={20}
-              onResize={(size) => setEditorSize(size as unknown as number)}
+              onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
               className="flex flex-col h-full bg-slate-900 dark:bg-slate-950/20 overflow-hidden shadow-sm"
             >
               {/* Show project tabs in project mode, single file tabs otherwise */}
@@ -124,7 +124,7 @@ export default function ProjectLayout() {
             <Panel
               defaultSize={previewSize}
               minSize={20}
-              onResize={(size) => setPreviewSize(size as unknown as number)}
+              onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
               className="flex flex-col h-full bg-slate-100 dark:bg-slate-950/40 overflow-hidden"
             >
               <PreviewFrame manualTrigger={manualTrigger} />
@@ -144,7 +144,7 @@ export default function ProjectLayout() {
           collapsedSize={0}
           onCollapse={handleConsoleCollapse}
           onExpand={handleConsoleExpand}
-          onResize={(size) => setConsoleSize(size as unknown as number)}
+          onResize={(panelSize) => setTopPanelSize(panelSize.asPercentage)}
           className="flex flex-col overflow-hidden shadow-inner font-sans antialiased"
         >
           <ConsolePanel />
