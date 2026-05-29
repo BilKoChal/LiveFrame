@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Plus,
   Trash2,
@@ -11,18 +11,25 @@ import {
   FolderOpen,
   Code2,
   Clock,
+  Sparkles,
 } from 'lucide-react';
 import { useProjectStore } from '../../stores/projectStore';
 import { useLayoutStore } from '../../stores/layoutStore';
 import type { Project, ProjectId } from '../../types/project';
 
-export default function ProjectList() {
+interface ProjectListProps {
+  /** Optional route-aware navigation callbacks */
+  onOpenProject?: (projectId: ProjectId) => void;
+  onNewProject?: () => void;
+}
+
+export default function ProjectList({ onOpenProject, onNewProject }: ProjectListProps) {
   const projects = useProjectStore((s) => s.projects);
-  const workspace = useProjectStore((s) => s.workspace);
   const createProject = useProjectStore((s) => s.createProject);
   const deleteProject = useProjectStore((s) => s.deleteProject);
   const duplicateProject = useProjectStore((s) => s.duplicateProject);
   const loadProject = useProjectStore((s) => s.loadProject);
+  const setActiveProject = useProjectStore((s) => s.setActiveProject);
   const setMode = useLayoutStore((s) => s.setMode);
 
   const [isCreating, setIsCreating] = useState(false);
@@ -30,6 +37,12 @@ export default function ProjectList() {
 
   const handleCreateProject = () => {
     if (!newProjectName.trim()) return;
+
+    if (onNewProject) {
+      onNewProject();
+      return;
+    }
+
     const projectId = createProject(newProjectName.trim(), 'project');
     loadProject(projectId);
     setMode('project');
@@ -38,6 +51,11 @@ export default function ProjectList() {
   };
 
   const handleOpenProject = (projectId: ProjectId) => {
+    if (onOpenProject) {
+      onOpenProject(projectId);
+      return;
+    }
+
     loadProject(projectId);
     const project = projects[projectId];
     setMode(project?.mode === 'project' ? 'project' : 'single-file');
@@ -62,25 +80,36 @@ export default function ProjectList() {
     );
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-950">
+    <div className="flex flex-col h-screen bg-white dark:bg-slate-950">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
-        <div>
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-            Projects
-          </h2>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
-            {sortedProjects.length} project{sortedProjects.length !== 1 ? 's' : ''}
-          </p>
+      <header className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800/80">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 shadow-md">
+            <Sparkles className="h-4.5 w-4.5 text-white animate-pulse" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+              Projects
+            </h2>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+              {sortedProjects.length} project{sortedProjects.length !== 1 ? 's' : ''}
+            </p>
+          </div>
         </div>
         <button
-          onClick={() => setIsCreating(true)}
+          onClick={() => {
+            if (onNewProject) {
+              onNewProject();
+            } else {
+              setIsCreating(true);
+            }
+          }}
           className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors"
         >
           <Plus className="h-4 w-4" />
           New Project
         </button>
-      </div>
+      </header>
 
       {/* New Project Form */}
       {isCreating && (
@@ -154,7 +183,7 @@ interface ProjectCardProps {
   onDuplicate: () => void;
 }
 
-function ProjectCard({ project, onOpen, onDelete, onDuplicate }: ProjectCardProps) {
+const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpen, onDelete, onDuplicate }) => {
   const fileCount = project.fileIds.length;
   const updatedAt = new Date(project.updatedAt);
   const timeAgo = getTimeAgo(updatedAt);

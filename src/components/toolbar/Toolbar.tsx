@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Sparkles, RefreshCcw, FolderTree, Code2, LayoutGrid } from 'lucide-react';
+import { Sparkles, RefreshCcw, FolderTree, Code2, LayoutGrid, Package } from 'lucide-react';
 import { useEditorStore } from '../../stores/editorStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { useLayoutStore } from '../../stores/layoutStore';
@@ -21,6 +21,8 @@ export default function Toolbar({ onManualRefresh }: ToolbarProps) {
   const setMode = useLayoutStore((s) => s.setMode);
   const toggleFileTree = useLayoutStore((s) => s.toggleFileTree);
   const isFileTreeOpen = useLayoutStore((s) => s.isFileTreeOpen);
+  const toggleResources = useLayoutStore((s) => s.toggleResources);
+  const isResourcesOpen = useLayoutStore((s) => s.isResourcesOpen);
   const activeProject = useProjectStore((s) => s.activeProject);
   const switchToProjectMode = useProjectStore((s) => s.switchToProjectMode);
   const switchToSingleFileMode = useProjectStore((s) => s.switchToSingleFileMode);
@@ -108,6 +110,21 @@ export default function Toolbar({ onManualRefresh }: ToolbarProps) {
             <FolderTree className="h-3.5 w-3.5" />
           </button>
         )}
+
+        {/* External Resources Toggle */}
+        <button
+          id="resources-toggle-btn"
+          onClick={toggleResources}
+          className={`flex items-center gap-1.5 px-2 py-1.5 text-xs font-bold rounded-lg border transition-all ${
+            isResourcesOpen
+              ? 'text-indigo-600 bg-indigo-50 border-indigo-200 dark:text-indigo-400 dark:bg-indigo-950/30 dark:border-indigo-800/60'
+              : 'text-slate-500 bg-slate-50 border-slate-200/80 dark:text-slate-400 dark:bg-slate-900/20 dark:border-slate-800/40 hover:text-slate-600 dark:hover:text-slate-300'
+          }`}
+          title="Toggle External Resources"
+        >
+          <Package className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">CDN</span>
+        </button>
 
         {/* Refresh Controls */}
         <RefreshControls onManualRefresh={onManualRefresh} />

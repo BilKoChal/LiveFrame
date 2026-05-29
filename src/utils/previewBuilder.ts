@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { ExternalResource } from '../types/project';
+
 export const CONSOLE_HOOK = `
 <script>
 (function() {
@@ -32,7 +34,7 @@ export const CONSOLE_HOOK = `
   function sendLog(type, args) {
     try {
       const message = args.map(arg => stringifyArg(arg)).join(' ');
-      
+
       window.parent.postMessage({
         source: 'liveframe-preview',
         type: 'console',
@@ -100,13 +102,42 @@ export const CONSOLE_HOOK = `
 /**
  * Combines user-written HTML, CSS, and JS code into a single, self-contained HTML page.
  * Includes console reporting and runtime exception trapping.
+ * Supports external resources (CDN links) injection.
  */
-export function assembleDocument(html: string, css: string, javascript: string): string {
+export function assembleDocument(
+  html: string,
+  css: string,
+  javascript: string,
+  externalResources: ExternalResource[] = []
+): string {
+  // Build external resource links
+  const externalHeadLinks = externalResources
+    .filter((r) => r.type === 'css' && r.placement === 'head')
+    .map((r) => `  <link rel="stylesheet" href="${r.url}">`)
+    .join('\n');
+
+  const externalHeadScripts = externalResources
+    .filter((r) => r.type === 'javascript' && r.placement === 'head')
+    .map((r) => `  <script src="${r.url}"><\/script>`)
+    .join('\n');
+
+  const externalBodyScripts = externalResources
+    .filter((r) => r.type === 'javascript' && r.placement === 'body')
+    .map((r) => `  <script src="${r.url}"><\/script>`)
+    .join('\n');
+
+  const externalBodyLinks = externalResources
+    .filter((r) => r.type === 'css' && r.placement === 'body')
+    .map((r) => `  <link rel="stylesheet" href="${r.url}">`)
+    .join('\n');
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+${externalHeadLinks}
+${externalHeadScripts}
   <style>
     ${css}
   </style>
@@ -114,6 +145,8 @@ export function assembleDocument(html: string, css: string, javascript: string):
 </head>
 <body>
   ${html}
+${externalBodyLinks}
+${externalBodyScripts}
   <script>
     // Execute user JS in an isolated wrapper to catch immediate syntax/runtime compilation loads
     try {

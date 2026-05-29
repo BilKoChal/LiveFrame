@@ -13,16 +13,16 @@
 | Phase | Status | Completion |
 |-------|--------|-----------|
 | Phase 0 — Rapid Prototype | **Complete** ✅ | 100% |
-| Phase 1 — Core Features | **In Progress** 🔧 | ~60% |
+| Phase 1 — Core Features | **Complete** ✅ | 100% |
 | Phase 2 — Polish & Production | Partially Started | ~15% |
 | Phase 3 — Enhancement | Not Started | 0% |
 
 ### Completed Milestones
 - ✅ **M1: First Preview** — Code typed in editor appears in live preview iframe
 - ✅ **M2: Theme Working** — Dark/light/system theme toggle works for both UI and CodeMirror
+- ✅ **M3: Project Mode** — Multi-file projects with file tree, tabs, and mode switching
+- ✅ **M4: Persistent** — Projects survive page refresh via IndexedDB
 - ✅ **M5: Console & Errors** — Console capture and error overlay working (pulled into Phase 0 early)
-- 🔧 M3: Project Mode — Partially implemented (1.1–1.4 done, 1.7–1.9 remaining)
-- ⬜ M4: Persistent — Not yet implemented
 - ⬜ M6: Production — Not yet deployed
 
 ---
@@ -138,7 +138,7 @@ See [`structure.md`](./structure.md) for the complete directory tree and file re
 
 ---
 
-### Phase 1 — Core Features ⬜
+### Phase 1 — Core Features ✅
 
 **Goal**: Add project mode, persistence, console capture, error overlay, and external resources — making LiveFrame a complete editor.
 
@@ -172,29 +172,29 @@ See [`structure.md`](./structure.md) for the complete directory tree and file re
 - [x] Create console capture script (injected into iframe) — **Located in `src/utils/previewBuilder.ts` as `CONSOLE_HOOK`**
 - [x] Implement `postMessage` listener for `liveframe:console` — **Located in `PreviewFrame.tsx`**
 - [x] Create `ConsolePanel.tsx` with color-coded entries, clear button, search filter
-- [ ] Create `ConsoleEntry.tsx` as a separate component — **Inline in ConsolePanel**
-- [ ] Create `ConsoleToolbar.tsx` as a separate component — **Inline in ConsolePanel**
+- [x] Create `ConsoleEntry.tsx` as a separate component — **Created at `src/components/console/ConsoleEntry.tsx`**
+- [x] Create `ConsoleToolbar.tsx` as a separate component — **Created at `src/components/console/ConsoleToolbar.tsx`**
 
 #### 1.6 Error Overlay ✅ (Implemented early in Phase 0)
 - [x] Implement error capture via `postMessage` — **Located in `PreviewFrame.tsx`**
 - [x] Create error overlay with error message, dismiss button — **Inline in `PreviewFrame.tsx`**
-- [ ] Add error count badge on preview panel — **Not done**
+- [x] Add error count badge on preview panel — **Red `!` badge next to 'Live Preview' header**
 
-#### 1.7 Mode Switching ✅ (Implemented as part of 1.1–1.4)
+#### 1.7 Mode Switching ✅
 - [x] Implement seamless switching between single-file and project mode — **In `Toolbar.tsx` mode switcher button**
 - [x] Add `ModeSwitcher.tsx` to toolbar — **Integrated into `Toolbar.tsx`**
-- [ ] Handle panel resizing on mode switch (imperative `PanelAPI.resize()`) — **Not yet done**
+- [x] Handle panel resizing on mode switch (collapsible panels) — **Collapsible panels with onCollapse/onExpand callbacks**
 - [x] Preserve work when switching modes (virtual project promotion/demotion) — **`switchToProjectMode`/`switchToSingleFileMode` in projectStore**
 
-#### 1.8 External Resources
-- Create `ExternalResourcePanel.tsx` (add/remove/reorder CDN URLs)
-- Add common library presets (Tailwind CDN, Bootstrap, Three.js, jQuery, etc.)
-- Inject external CSS/JS into preview srcdoc assembly
+#### 1.8 External Resources ✅
+- [x] Create `ExternalResourcePanel.tsx` (add/remove/reorder CDN URLs) — **Created at `src/components/project/ExternalResourcePanel.tsx`**
+- [x] Add common library presets (Tailwind CDN, Bootstrap, Three.js, jQuery, etc.) — **8 presets: Tailwind, Bootstrap CSS/JS, Three.js, jQuery, Alpine.js, Lodash, D3.js**
+- [x] Inject external CSS/JS into preview srcdoc assembly — **Updated `previewBuilder.ts` and `projectPreviewBuilder.ts`**
 
-#### 1.9 Routing
-- Set up React Router with routes: `/` (single-file), `/project` (list), `/project/:id` (editor)
-- Configure `BrowserRouter` with dynamic `basename` from `import.meta.env.BASE_URL`
-- Add route-based state derivation (mode from URL)
+#### 1.9 Routing ✅
+- [x] Set up React Router with routes: `/` (single-file), `/project` (list), `/project/:id` (editor) — **In `App.tsx` with `BrowserRouter`**
+- [x] Configure `BrowserRouter` with dynamic `basename` from `import.meta.env.BASE_URL` — **`getBasename()` helper**
+- [x] Add route-based state derivation (mode from URL) — **`ProjectRouteHandler`, `SingleFileRouteHandler` components**
 
 **Phase 1 Deliverable**: A fully functional editor with both single-file and project modes, persistence across refresh, console output, error display, external resources, and mode switching.
 
@@ -346,8 +346,9 @@ Phase 3 (ongoing, no strict dependencies)
 1. ~~**Extract this planning package** into the project repository's `docs/plan/` directory~~ ✅ Done
 2. ~~**Initialize the project** using the Development Agent with the scaffold structure from `structure.md`~~ ✅ Done
 3. ~~**Complete Phase 0** — All items implemented ✅~~
-4. **Start Phase 1** — Project mode (data model, file tree, tabs, IndexedDB persistence, mode switching, routing)
-5. **Deploy to GitHub Pages** — Deploy workflow configured; push to `main` to trigger auto-deploy
+4. ~~**Complete Phase 1** — Project mode, persistence, console, errors, resources, routing ✅~~
+5. **Start Phase 2** — Device frames, ZIP export, templates, keyboard shortcuts, accessibility, CI/CD
+6. **Deploy to GitHub Pages** — Deploy workflow configured; push to `main` to trigger auto-deploy
 
 ---
 

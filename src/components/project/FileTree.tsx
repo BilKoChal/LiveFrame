@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   FileCode2,
@@ -239,7 +239,7 @@ export default function FileTree({ onFileSelect }: FileTreeProps) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900/40 border-r border-slate-200 dark:border-slate-800/60">
+    <div className="flex flex-col h-full min-w-[120px] bg-slate-50 dark:bg-slate-900/40 border-r border-slate-200 dark:border-slate-800/60">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 bg-slate-100 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800/60 select-none">
         <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">

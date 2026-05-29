@@ -38,7 +38,7 @@ export function useAutoRefresh(manualTrigger: number) {
   // Determine the source content based on mode
   const getPreviewContent = () => {
     if (mode === 'project' && activeProject) {
-      // For virtual project (single-file mode stored as project), use legacy assembly
+      // For virtual project (single-file mode stored as project), use legacy assembly with resources
       if (activeProject.id === 'proj_virtual_default') {
         const htmlContent =
           fileContents[VIRTUAL_HTML_FILE_ID] ?? html;
@@ -46,14 +46,15 @@ export function useAutoRefresh(manualTrigger: number) {
           fileContents[VIRTUAL_CSS_FILE_ID] ?? css;
         const jsContent =
           fileContents[VIRTUAL_JS_FILE_ID] ?? javascript;
-        return assembleDocument(htmlContent, cssContent, jsContent);
+        return assembleDocument(htmlContent, cssContent, jsContent, activeProject.externalResources);
       }
       // For real project mode, use project-aware assembly
       return assembleProjectDocument(activeProject, files, fileContents);
     }
 
-    // Single-file mode
-    return assembleDocument(html, css, javascript);
+    // Single-file mode — pass external resources from active project if available
+    const externalResources = activeProject?.externalResources ?? [];
+    return assembleDocument(html, css, javascript, externalResources);
   };
 
   // Auto-refresh hook with 400ms debounce

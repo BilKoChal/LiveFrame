@@ -51,6 +51,11 @@ export default function PreviewFrame({ manualTrigger }: { manualTrigger: number 
       <div className="flex items-center justify-between px-4 py-2 bg-slate-100 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800/60 select-none">
         <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
           <Eye className="h-4 w-4" /> Live Preview
+          {errorOverlay && (
+            <span className="ml-1 flex items-center justify-center h-4 min-w-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-bold leading-none">
+              !
+            </span>
+          )}
         </span>
 
         <div className="flex items-center gap-0.5 rounded-lg bg-slate-200/50 dark:bg-slate-900/50 p-0.5 border border-slate-200/85 dark:border-slate-800/40">

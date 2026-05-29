@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useState, useCallback } from 'react';
 import { Panel, Group, Separator } from 'react-resizable-panels';
 import FileTree from './FileTree';
 import ProjectFileTabs from './ProjectFileTabs';
+import ExternalResourcePanel from './ExternalResourcePanel';
 import PreviewFrame from '../preview/PreviewFrame';
 import ConsolePanel from '../console/ConsolePanel';
 import ResizeHandle from '../layout/ResizeHandle';
@@ -21,26 +22,65 @@ export default function ProjectLayout() {
   const [manualTrigger, setManualTrigger] = useState(0);
   const isConsoleOpen = useLayoutStore((s) => s.isConsoleOpen);
   const isFileTreeOpen = useLayoutStore((s) => s.isFileTreeOpen);
+  const isResourcesOpen = useLayoutStore((s) => s.isResourcesOpen);
   const activeProject = useProjectStore((s) => s.activeProject);
   const activeFileId = useEditorStore((s) => s.activeFileId);
+
+  // Persisted sizes
+  const fileTreeSize = useLayoutStore((s) => s.fileTreeSize);
+  const editorSize = useLayoutStore((s) => s.editorSize);
+  const previewSize = useLayoutStore((s) => s.previewSize);
+  const consoleSize = useLayoutStore((s) => s.consoleSize);
+  const topPanelSize = useLayoutStore((s) => s.topPanelSize);
+  const setFileTreeSize = useLayoutStore((s) => s.setFileTreeSize);
+  const setEditorSize = useLayoutStore((s) => s.setEditorSize);
+  const setPreviewSize = useLayoutStore((s) => s.setPreviewSize);
+  const setConsoleSize = useLayoutStore((s) => s.setConsoleSize);
+  const setTopPanelSize = useLayoutStore((s) => s.setTopPanelSize);
+
+  // Collapse/expand file tree via callback
+  const handleFileTreeCollapse = useCallback(() => {
+    useLayoutStore.getState().setIsFileTreeOpen(false);
+  }, []);
+
+  const handleFileTreeExpand = useCallback(() => {
+    useLayoutStore.getState().setIsFileTreeOpen(true);
+  }, []);
+
+  const handleConsoleCollapse = useCallback(() => {
+    useLayoutStore.getState().setIsConsoleOpen(false);
+  }, []);
+
+  const handleConsoleExpand = useCallback(() => {
+    useLayoutStore.getState().setIsConsoleOpen(true);
+  }, []);
 
   const handleManualRefresh = () => {
     setManualTrigger((prev) => prev + 1);
   };
 
   return (
-    <main className="flex-1 w-full min-h-0 bg-slate-50 dark:bg-slate-900/10">
+    <main className="flex-1 w-full min-h-0 bg-slate-50 dark:bg-slate-900/10 relative">
       <Group orientation="vertical">
         {/* Top Half: Horizontal split */}
-        <Panel defaultSize={75} minSize={30}>
+        <Panel
+          defaultSize={topPanelSize}
+          minSize={30}
+          onResize={(size) => setTopPanelSize(size as unknown as number)}
+        >
           <Group orientation="horizontal">
-            {/* File Tree Panel */}
-            {isFileTreeOpen && activeProject?.mode === 'project' && (
+            {/* File Tree Panel — always in DOM, collapsible */}
+            {activeProject?.mode === 'project' && (
               <>
                 <Panel
-                  defaultSize={18}
-                  minSize={12}
-                  maxSize={35}
+                  defaultSize={fileTreeSize}
+                  minSize={5}
+                  maxSize={45}
+                  collapsible
+                  collapsedSize={0}
+                  onCollapse={handleFileTreeCollapse}
+                  onExpand={handleFileTreeExpand}
+                  onResize={(size) => setFileTreeSize(size as unknown as number)}
                   className="flex flex-col h-full overflow-hidden"
                 >
                   <FileTree />
@@ -52,7 +92,12 @@ export default function ProjectLayout() {
             )}
 
             {/* Editor Panel */}
-            <Panel defaultSize={50} minSize={25} className="flex flex-col h-full bg-slate-900 dark:bg-slate-950/20 overflow-hidden shadow-sm">
+            <Panel
+              defaultSize={editorSize}
+              minSize={20}
+              onResize={(size) => setEditorSize(size as unknown as number)}
+              className="flex flex-col h-full bg-slate-900 dark:bg-slate-950/20 overflow-hidden shadow-sm"
+            >
               {/* Show project tabs in project mode, single file tabs otherwise */}
               {activeProject?.mode === 'project' ? (
                 <ProjectFileTabs />
@@ -76,28 +121,48 @@ export default function ProjectLayout() {
             </Separator>
 
             {/* Preview Panel */}
-            <Panel defaultSize={50} minSize={25} className="flex flex-col h-full bg-slate-100 dark:bg-slate-950/40 overflow-hidden">
+            <Panel
+              defaultSize={previewSize}
+              minSize={20}
+              onResize={(size) => setPreviewSize(size as unknown as number)}
+              className="flex flex-col h-full bg-slate-100 dark:bg-slate-950/40 overflow-hidden"
+            >
               <PreviewFrame manualTrigger={manualTrigger} />
             </Panel>
           </Group>
         </Panel>
 
-        {/* Console Panel */}
-        {isConsoleOpen && (
-          <>
-            <Separator className="outline-none focus:ring-0">
-              <ResizeHandle direction="vertical" />
-            </Separator>
-            <Panel defaultSize={25} minSize={10} maxSize={50} className="flex flex-col overflow-hidden shadow-inner font-sans antialiased">
-              <ConsolePanel />
-            </Panel>
-          </>
-        )}
+        {/* Console Panel — always in DOM, collapsible */}
+        <Separator className="outline-none focus:ring-0">
+          <ResizeHandle direction="vertical" />
+        </Separator>
+        <Panel
+          defaultSize={consoleSize}
+          minSize={8}
+          maxSize={60}
+          collapsible
+          collapsedSize={0}
+          onCollapse={handleConsoleCollapse}
+          onExpand={handleConsoleExpand}
+          onResize={(size) => setConsoleSize(size as unknown as number)}
+          className="flex flex-col overflow-hidden shadow-inner font-sans antialiased"
+        >
+          <ConsolePanel />
+        </Panel>
       </Group>
 
-      {!isConsoleOpen && (
-        <div className="flex-shrink-0">
-          <ConsolePanel />
+      {/* External Resources Slide-Over Panel */}
+      {isResourcesOpen && activeProject && (
+        <div className="absolute inset-0 z-40 flex pointer-events-none">
+          {/* Backdrop */}
+          <div
+            className="flex-1 bg-slate-950/20 dark:bg-slate-950/40 pointer-events-auto"
+            onClick={() => useLayoutStore.getState().setIsResourcesOpen(false)}
+          />
+          {/* Panel */}
+          <div className="w-72 h-full pointer-events-auto shadow-2xl border-l border-slate-200 dark:border-slate-800/60">
+            <ExternalResourcePanel projectId={activeProject.id} />
+          </div>
         </div>
       )}
     </main>
