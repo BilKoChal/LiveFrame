@@ -33,7 +33,6 @@ export default function CodeMirrorEditor() {
   const activeFileId = useEditorStore((s) => s.activeFileId);
   const fileContents = useEditorStore((s) => s.fileContents);
   const updateFileContent = useEditorStore((s) => s.updateFileContent);
-  const updateProjectFileContent = useProjectStore((s) => s.updateFileContent);
   const files = useProjectStore((s) => s.files);
 
   const theme = useUIStore((state) => state.theme);
@@ -66,9 +65,8 @@ export default function CodeMirrorEditor() {
     const fileType = file?.type ?? 'html';
 
     const handleChange = (value: string) => {
+      // Single write target — editorStore auto-syncs to projectStore
       updateFileContent(activeFileId, value);
-      // Sync to project store for persistence
-      updateProjectFileContent(activeFileId, value);
     };
 
     return (

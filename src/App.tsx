@@ -17,6 +17,7 @@ import {
   isIDBAvailable,
 } from './utils/idb';
 import {
+  VIRTUAL_PROJECT_ID,
   VIRTUAL_HTML_FILE_ID,
   VIRTUAL_CSS_FILE_ID,
   VIRTUAL_JS_FILE_ID,
@@ -61,8 +62,8 @@ function SingleFileRouteHandler() {
     // Ensure virtual project is active for single-file mode
     if (!activeProject) {
       const projectStore = useProjectStore.getState();
-      if (projectStore.projects['proj_virtual_default']) {
-        projectStore.setActiveProject('proj_virtual_default');
+      if (projectStore.projects[VIRTUAL_PROJECT_ID]) {
+        projectStore.setActiveProject(VIRTUAL_PROJECT_ID);
       }
     }
   }, [setMode, activeProject]);

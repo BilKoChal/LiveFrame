@@ -4,7 +4,7 @@
  */
 
 import type { Project, FileEntry, FileId } from '../types/project';
-import { CONSOLE_HOOK, assembleDocument } from './previewBuilder';
+import { CONSOLE_HOOK, buildExternalResourceTags } from './previewBuilder';
 
 /**
  * Assemble a complete HTML document from a project's files.
@@ -60,34 +60,17 @@ export function assembleProjectDocument(
     ? (fileContents[mainHtml.id] ?? mainHtml.content ?? '')
     : '<div id="app"></div>';
 
-  // Build external resource links
-  const externalHeadLinks = project.externalResources
-    .filter((r) => r.type === 'css' && r.placement === 'head')
-    .map((r) => `  <link rel="stylesheet" href="${r.url}">`)
-    .join('\n');
-
-  const externalBodyScripts = project.externalResources
-    .filter((r) => r.type === 'javascript' && r.placement === 'body')
-    .map((r) => `  <script src="${r.url}"><\/script>`)
-    .join('\n');
-
-  const externalHeadScripts = project.externalResources
-    .filter((r) => r.type === 'javascript' && r.placement === 'head')
-    .map((r) => `  <script src="${r.url}"><\/script>`)
-    .join('\n');
-
-  const externalBodyLinks = project.externalResources
-    .filter((r) => r.type === 'css' && r.placement === 'body')
-    .map((r) => `  <link rel="stylesheet" href="${r.url}">`)
-    .join('\n');
+  // Build external resource links using shared helper
+  const head = buildExternalResourceTags(project.externalResources, 'head');
+  const body = buildExternalResourceTags(project.externalResources, 'body');
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-${externalHeadLinks}
-${externalHeadScripts}
+${head.links}
+${head.scripts}
   <style>
     ${allCss}
   </style>
@@ -95,8 +78,8 @@ ${externalHeadScripts}
 </head>
 <body>
   ${htmlContent}
-${externalBodyLinks}
-${externalBodyScripts}
+${body.links}
+${body.scripts}
   <script>
     try {
       ${allJs}

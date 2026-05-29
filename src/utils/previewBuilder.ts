@@ -99,6 +99,32 @@ export const CONSOLE_HOOK = `
 </script>
 `;
 
+// ─── External Resource Tags Builder ────────────────────────────
+
+/**
+ * Build HTML tag strings for external CSS/JS resources.
+ * Shared by both `assembleDocument` and `assembleProjectDocument`
+ * to avoid duplicating the filter-and-map logic.
+ */
+export function buildExternalResourceTags(
+  resources: ExternalResource[],
+  placement: 'head' | 'body'
+): { links: string; scripts: string } {
+  const links = resources
+    .filter((r) => r.type === 'css' && r.placement === placement)
+    .map((r) => `  <link rel="stylesheet" href="${r.url}">`)
+    .join('\n');
+
+  const scripts = resources
+    .filter((r) => r.type === 'javascript' && r.placement === placement)
+    .map((r) => `  <script src="${r.url}"><\/script>`)
+    .join('\n');
+
+  return { links, scripts };
+}
+
+// ─── Document Assembly ─────────────────────────────────────────
+
 /**
  * Combines user-written HTML, CSS, and JS code into a single, self-contained HTML page.
  * Includes console reporting and runtime exception trapping.
@@ -110,34 +136,17 @@ export function assembleDocument(
   javascript: string,
   externalResources: ExternalResource[] = []
 ): string {
-  // Build external resource links
-  const externalHeadLinks = externalResources
-    .filter((r) => r.type === 'css' && r.placement === 'head')
-    .map((r) => `  <link rel="stylesheet" href="${r.url}">`)
-    .join('\n');
-
-  const externalHeadScripts = externalResources
-    .filter((r) => r.type === 'javascript' && r.placement === 'head')
-    .map((r) => `  <script src="${r.url}"><\/script>`)
-    .join('\n');
-
-  const externalBodyScripts = externalResources
-    .filter((r) => r.type === 'javascript' && r.placement === 'body')
-    .map((r) => `  <script src="${r.url}"><\/script>`)
-    .join('\n');
-
-  const externalBodyLinks = externalResources
-    .filter((r) => r.type === 'css' && r.placement === 'body')
-    .map((r) => `  <link rel="stylesheet" href="${r.url}">`)
-    .join('\n');
+  // Build external resource links using shared helper
+  const head = buildExternalResourceTags(externalResources, 'head');
+  const body = buildExternalResourceTags(externalResources, 'body');
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-${externalHeadLinks}
-${externalHeadScripts}
+${head.links}
+${head.scripts}
   <style>
     ${css}
   </style>
@@ -145,8 +154,8 @@ ${externalHeadScripts}
 </head>
 <body>
   ${html}
-${externalBodyLinks}
-${externalBodyScripts}
+${body.links}
+${body.scripts}
   <script>
     // Execute user JS in an isolated wrapper to catch immediate syntax/runtime compilation loads
     try {

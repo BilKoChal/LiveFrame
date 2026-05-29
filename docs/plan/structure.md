@@ -47,8 +47,11 @@ liveframe/
 │   ├── vite-env.d.ts                        # Vite type declarations
 │   │
 │   ├── types/
-│   │   ├── index.ts                         # Legacy shared types (Theme, ActiveTab, ConsoleEntry) + re-exports
+│   │   ├── index.ts                         # Shared types (Theme, ActiveTab, ConsoleEntry) + re-exports
 │   │   └── project.ts                       # Project mode types (ProjectId, FileId, FileEntry, Project, etc.)
+│   │
+│   ├── constants/
+│   │   └── defaultContent.ts                # Single source of truth for DEFAULT_HTML/CSS/JS boilerplate
 │   │
 │   ├── components/
 │   │   ├── layout/
@@ -76,7 +79,8 @@ liveframe/
 │   │       ├── FileTree.tsx                 # Virtualized file tree with context menu + inline rename
 │   │       ├── ProjectFileTabs.tsx          # Sortable file tabs with drag-and-drop
 │   │       ├── ProjectLayout.tsx            # Project mode layout (file tree + editor + preview)
-│   │       └── ProjectList.tsx              # Project list page with create/delete/duplicate
+│   │       ├── ProjectList.tsx              # Project list page with create/delete/duplicate
+│   │       └── ExternalResourcePanel.tsx    # External CDN resource manager
 │   │
 │   ├── stores/
 │   │   ├── editorStore.ts                   # Editor content + per-file content + tab management
@@ -116,14 +120,15 @@ liveframe/
 | `src/App.tsx` | Root component — initializes theme, IDB hydration, auto-save setup, renders AppLayout |
 | `src/index.css` | Tailwind v4 `@import`, `@theme`, custom fonts (Inter, JetBrains Mono), animations |
 | `src/types/project.ts` | Project mode type definitions (ProjectId, FileId, FileEntry, Project, etc.) + branded ID factories |
-| `src/types/index.ts` | Legacy shared types + re-exports of project types |
+| `src/types/index.ts` | Shared types + re-exports of project types |
+| `src/constants/defaultContent.ts` | Single source of truth for DEFAULT_HTML, DEFAULT_CSS, DEFAULT_JS boilerplate |
 | `src/stores/projectStore.ts` | Project/file CRUD, virtual project, workspace, mode switching |
 | `src/stores/editorStore.ts` | Editor content (legacy + per-file), dirty map, tab management |
 | `src/stores/uiStore.ts` | Theme, autoRefresh, consoleEntries, errorOverlay |
 | `src/stores/layoutStore.ts` | Panel visibility (isConsoleOpen), mode (single-file/project), file tree visibility |
 | `src/utils/vfs.ts` | VirtualFileSystem — tree building, path utilities, file type detection |
 | `src/utils/idb.ts` | IndexedDB — database schema, CRUD, auto-save scheduler, hydration |
-| `src/utils/previewBuilder.ts` | `assembleDocument()` — single-file preview assembly + `CONSOLE_HOOK` |
+| `src/utils/previewBuilder.ts` | `assembleDocument()` + `CONSOLE_HOOK` + `buildExternalResourceTags()` (shared helper) |
 | `src/utils/projectPreviewBuilder.ts` | `assembleProjectDocument()` — multi-file project preview assembly |
 | `src/hooks/useAutoRefresh.ts` | 400ms debounced auto-refresh; dual mode (single-file + project) |
 | `src/hooks/useTheme.ts` | Applies dark/light class to `<html>`, listens for system preference changes |

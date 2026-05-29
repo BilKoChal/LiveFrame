@@ -12,6 +12,7 @@ import { assembleDocument } from '../utils/previewBuilder';
 import { assembleProjectDocument } from '../utils/projectPreviewBuilder';
 import type { FileId } from '../types/project';
 import {
+  VIRTUAL_PROJECT_ID,
   VIRTUAL_HTML_FILE_ID,
   VIRTUAL_CSS_FILE_ID,
   VIRTUAL_JS_FILE_ID,
@@ -39,7 +40,7 @@ export function useAutoRefresh(manualTrigger: number) {
   const getPreviewContent = useCallback(() => {
     if (mode === 'project' && activeProject) {
       // For virtual project (single-file mode stored as project), use legacy assembly with resources
-      if (activeProject.id === 'proj_virtual_default') {
+      if (activeProject.id === VIRTUAL_PROJECT_ID) {
         const htmlContent =
           fileContents[VIRTUAL_HTML_FILE_ID] ?? html;
         const cssContent =

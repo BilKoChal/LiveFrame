@@ -63,29 +63,36 @@ async function getDB(): Promise<IDBPDatabase<LiveFrameDB>> {
   if (dbInstance) return dbInstance;
 
   dbInstance = await openDB<LiveFrameDB>(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      // ─── Projects Store ─────────────────────────────────
-      if (!db.objectStoreNames.contains('projects')) {
-        const projectStore = db.createObjectStore('projects', {
-          keyPath: 'id',
-        });
-        projectStore.createIndex('by-updatedAt', 'updatedAt');
-        projectStore.createIndex('by-name', 'name');
+    upgrade(db, oldVersion) {
+      // ─── Version 1: Initial schema ───────────────────────
+      if (oldVersion < 1) {
+        // ─── Projects Store ─────────────────────────────────
+        if (!db.objectStoreNames.contains('projects')) {
+          const projectStore = db.createObjectStore('projects', {
+            keyPath: 'id',
+          });
+          projectStore.createIndex('by-updatedAt', 'updatedAt');
+          projectStore.createIndex('by-name', 'name');
+        }
+
+        // ─── Files Store ────────────────────────────────────
+        if (!db.objectStoreNames.contains('files')) {
+          const fileStore = db.createObjectStore('files', { keyPath: 'id' });
+          fileStore.createIndex('by-projectId', 'projectId');
+          fileStore.createIndex('by-projectId-path', ['projectId', 'path'], {
+            unique: true,
+          });
+        }
+
+        // ─── Settings Store ─────────────────────────────────
+        if (!db.objectStoreNames.contains('settings')) {
+          db.createObjectStore('settings', { keyPath: 'key' });
+        }
       }
 
-      // ─── Files Store ────────────────────────────────────
-      if (!db.objectStoreNames.contains('files')) {
-        const fileStore = db.createObjectStore('files', { keyPath: 'id' });
-        fileStore.createIndex('by-projectId', 'projectId');
-        fileStore.createIndex('by-projectId-path', ['projectId', 'path'], {
-          unique: true,
-        });
-      }
-
-      // ─── Settings Store ─────────────────────────────────
-      if (!db.objectStoreNames.contains('settings')) {
-        db.createObjectStore('settings', { keyPath: 'key' });
-      }
+      // ─── Future migrations ─────────────────────────────────
+      // if (oldVersion < 2) { /* add new stores/indexes for v2 */ }
+      // if (oldVersion < 3) { /* add new stores/indexes for v3 */ }
     },
     blocked() {
       console.warn('LiveFrame DB upgrade blocked — close other tabs');

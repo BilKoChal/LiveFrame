@@ -1,8 +1,8 @@
 # Fixing Plan — LiveFrame Runtime Bugs & Code Quality Issues
 
 > **Created**: 2026-05-29  
-> **Status**: Plan Ready  
-> **Scope**: Project mode not working, panel sliders stuck, IDB persistence broken, and code quality issues  
+> **Status**: Phase 1 & 2 & 3 Implemented  
+> **Scope**: Project mode not working, panel sliders stuck, IDB persistence broken, hardcoded values, duplicate code, and code quality issues  
 > **Based on**: Full codebase analysis of all 30+ source files
 
 ---
@@ -477,3 +477,31 @@ MEDIUM:
 
 Fixes: project mode not activating, panel sliders stuck, IDB persistence disabled
 ```
+
+---
+
+## Implementation Log
+
+### Round 1 — Runtime Bug Fixes ✅
+
+| Bug | Status | Implementation |
+|-----|--------|----------------|
+| BUG 1 — onResize wrong setters | ✅ Fixed | `ProjectLayout.tsx` + `AppLayout.tsx` — all 5 handlers now use correct setters |
+| BUG 2 — isIDBAvailable() broken | ✅ Fixed | `idb.ts` — close() + deleteDatabase() + onblocked handler |
+| BUG 9 — VIRTUAL_PROJECT_ID hardcoded | ✅ Fixed | `App.tsx` + `useAutoRefresh.ts` — now use named constant |
+| BUG 13 — scheduleContentSave stale closure | ✅ Fixed | `idb.ts` — re-fetches from store at fire-time via lazy getter |
+| BUG 10 — Dual-write in CodeMirrorEditor | ✅ Fixed | `editorStore.updateFileContent` auto-syncs to projectStore |
+| ProjectList ignores newProjectName | ✅ Fixed | `onNewProject` now accepts `name: string`, `handleNewProject` in `App.tsx` uses it |
+| useAutoRefresh stale closure | ✅ Fixed | `getPreviewContent` wrapped in `useCallback` with proper deps |
+
+### Round 2 — Hardcoded Values & Duplicate Code ✅
+
+| Issue | Status | Implementation |
+|-------|--------|----------------|
+| HARDCODE1 — DEFAULT_HTML/CSS/JS duplicated | ✅ Fixed | Extracted to `src/constants/defaultContent.ts`, imported in both stores |
+| HARDCODE2 — 'proj_virtual_default' in useAutoRefresh.ts | ✅ Fixed | Uses `VIRTUAL_PROJECT_ID` constant |
+| HARDCODE3 — 'proj_virtual_default' in App.tsx | ✅ Fixed | Uses `VIRTUAL_PROJECT_ID` constant |
+| HARDCODE4 — IDB upgrade no migration strategy | ✅ Fixed | `upgrade(db, oldVersion)` now uses `if (oldVersion < 1)` blocks with future migration placeholders |
+| DUPLICATE1 — src/types.ts dead file | ✅ Fixed | Deleted — all imports resolve to `src/types/index.ts` |
+| DUPLICATE2 — External resource HTML building duplicated | ✅ Fixed | Extracted `buildExternalResourceTags()` helper in `previewBuilder.ts`, used by both builders |
+| DUPLICATE3 — updateFileContent dual-write | ✅ Fixed | `editorStore.updateFileContent` is single write target, auto-syncs to `projectStore` via lazy getter; `CodeMirrorEditor` no longer calls both stores |
